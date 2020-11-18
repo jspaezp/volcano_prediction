@@ -6,10 +6,34 @@ from pathlib import Path
 import click
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument("in_dir", type=click.Path(exists=True, file_okay=False))
+@click.argument("out_dir_prefix", type=click.Path(file_okay=False))
+@click.option("--batches", type=int)
+def batch_data(in_dir, out_dir_prefix, batches: int = 20):
+    out_dir_prefix = Path(out_dir_prefix)
+    in_dir = Path(in_dir)
+
+    csv_files = list(in_dir.glob("*.csv"))
+
+    for i, f in tqdm(enumerate(csv_files)):
+        b = i % batches
+        out_dir = out_dir_prefix / f"{b}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        # Path('the-link-you-want-to-create').symlink_to('the-original-file')
+        (out_dir / f"{f.name}").simlink_to(f.absolute())
+
+
+@cli.command()
 @click.argument("in_dir", type=click.Path(exists=True, file_okay=False))
 @click.argument("out_dir", type=click.Path(file_okay=False))
-def cli(in_dir, out_dir):
+def cwt_dir(in_dir, out_dir):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
