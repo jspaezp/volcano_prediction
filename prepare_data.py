@@ -27,7 +27,7 @@ def batch_data(in_dir, out_dir_prefix, batches: int = 20):
         out_dir.mkdir(parents=True, exist_ok=True)
 
         # Path('the-link-you-want-to-create').symlink_to('the-original-file')
-        (out_dir / f"{f.name}").simlink_to(f.absolute())
+        (out_dir / f"{f.name}").symlink_to(f.absolute())
 
 
 @cli.command()
@@ -42,7 +42,11 @@ def cwt_dir(in_dir, out_dir):
 
     for f in tqdm(csv_files):
         out_file = out_dir / f"{f.stem}.pt"
-        assert not out_file.is_file()
+        
+        if out_file.is_file():
+            print(f"skipping file {str(out_file)} because it already exists!!")
+            continue
+
         a = file_to_cwt_array(f, reshape_size=(224, 224))
         torch.save(a, out_file)
 
