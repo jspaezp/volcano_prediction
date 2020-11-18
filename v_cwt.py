@@ -35,7 +35,9 @@ def file_to_cwt_list(filename):
 def norm_arr(x, reshape_size=(256, 256)):
     resized = cv2.resize(x, reshape_size)
     abs_arr = np.abs(np.nan_to_num(resized))
-    abs_max = abs_arr / np.std(abs_arr)
+
+    # I am adding 0.01 to prevent division by 0 issues
+    abs_max = abs_arr / (np.std(abs_arr) + 0.01) 
 
     # This would make the limit from 0 to 1
     # And censoring the upper limit at 4 standard deviations
