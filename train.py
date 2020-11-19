@@ -144,6 +144,7 @@ def main(
     lr=0.01,
     device=get_default_device(),
     batch_size=16,
+    checkpoint_dir = ".",
 ):
     print(f"Device that will be used is {device}")
 
@@ -218,6 +219,10 @@ def main(
 
         prog_bar.close()
         expected, predicted = evaluate(net, testloader, f"epoch_{epoch}.png")
+
+        checkpoint_path = Path(checkpoint_dir)
+        checkpoint_path = checkpoint_path / f"model_l_{epoch_loss / (i + 1)}_e_{epoch}.pt"
+        torch.save(net.state_dict(), checkpoint_path)
 
     print("Finished Training")
     return net
