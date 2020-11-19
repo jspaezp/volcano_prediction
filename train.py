@@ -18,7 +18,11 @@ class tensorLoader(Dataset):
         for i, (x, y) in enumerate(my_iter):
             db_map.update({x: i})
             x = str(x)
-            y = [math.log10(float(y))]
+            # TODO: check if dividing by the mean order of magnitude would be
+            # better than log scaling the out...
+            # y = [math.log10(float(y))]
+
+            y = [float(y) / 1e8]
             y = torch.tensor(y)
             db.append({"path": (Path(filepath) / f"{x}.pt"), "value": y})
 
@@ -66,7 +70,6 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
     train_set = df.sample(frac=0.95, random_state=0)
     test_set = df_copy.drop(train_set.index)
 
-    # .glob("*.pt")
     traindata = tensorLoader(train_set, data_path)
     trainloader = torch.utils.data.DataLoader(
         traindata, batch_size=1, shuffle=True, num_workers=5
@@ -94,6 +97,7 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
 
             # forward + backward + optimize
             outputs = net(inputs)
+            flat_out = outputs.numpy().flatten()
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -104,11 +108,11 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
 
             curr_epoch_loss = epoch_loss / (i + 1)
 
-            prog_bar.set_postfix({'epoch_loss': curr_epoch_loss, 'running_loss': curr_running_loss, 'last_out': outputs})
+            prog_bar.set_postfix({'epoch_loss': curr_epoch_loss, 'running_loss': curr_running_loss, 'last_out': flat_out})
 
             if i % 100 == 99:  # print every 200 mini-batches
                 curr_running_loss = running_loss / 100
-                print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, curr_running_loss))
+                # print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, curr_running_loss))
                 running_loss = 0.0
 
             if i >= iter:
@@ -122,4 +126,3 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
 if __name__ == "__main__":
 
     main()
-
