@@ -15,7 +15,10 @@ from torch.utils.tensorboard import SummaryWriter
 
 # TODO this name is misleading because it is not really a loader
 class tensorLoader(Dataset):
-    def __init__(self, train_df, filepath):
+    def __init__(self, train_df, filepath, shuffle_channels=False):
+        self.shuffle_channels = shuffle_channels
+        self.shuffler = nn.ChannelShuffle(2)
+
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
         db_map = {}
         db = []
@@ -49,6 +52,9 @@ class tensorLoader(Dataset):
         item = self.db[index]
         data_tensor = torch.load(item["path"])
         # print(data_tensor.shape)
+        if self.shuffle_channels == True:
+            data_tensor = self.shuffler(data_tensor)            
+
         return data_tensor[0, :, :, :], item["value"]
 
 
@@ -177,7 +183,7 @@ def main(
         df.sample(frac=1, random_state=42), [int(0.8 * len(df)), int(0.9 * len(df))]
     )
 
-    traindata = tensorLoader(pd.concat([train_set, test_set]), data_path)
+    traindata = tensorLoader(pd.concat([train_set, test_set]), data_path, shuffle_channels=True)
     trainloader = torch.utils.data.DataLoader(
         traindata, batch_size=batch_size, shuffle=True, num_workers=5
     )
