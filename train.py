@@ -176,7 +176,7 @@ def main(
 
             # forward + backward + optimize
             outputs = net(inputs)
-            flat_out = outputs.cpu().detach().numpy().flatten()
+            flat_out = outputs.cpu().detach().numpy().flatten()[0]
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
