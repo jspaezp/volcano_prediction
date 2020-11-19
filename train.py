@@ -7,7 +7,6 @@ from tqdm import tqdm
 
 import torch.optim as optim
 import torch.nn as nn
-from v_models import resnet_10r
 import numpy as np
 
 import matplotlib.pyplot as plt
