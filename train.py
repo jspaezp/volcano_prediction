@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset
 from pathlib import Path
 import pandas as pd
+from tqdm import tqdm
 
 
 class tensorLoader(Dataset):
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     for epoch in range(2):  # loop over the dataset multiple times
 
         running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
+        for i, data in tqdm(enumerate(trainloader, 0)):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
 
