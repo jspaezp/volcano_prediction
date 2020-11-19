@@ -33,11 +33,13 @@ class tensorLoader(Dataset):
         self.db = db
         self.db_map = db_map
 
-        print("Validating Paths")
+        print("Validating Paths\n")
+        counter = 0
         for f in self.db:
             # print(f)
             assert f["path"].is_file
-        print("Validation Done")
+            counter += 1
+        print(f"Validation Done for {counter} Files\n")
 
     def __len__(self):
         return len(self.db)
@@ -121,14 +123,16 @@ def evaluate(net, testloader, outfile = "file.png"):
 
     x_vals = np.concatenate([x.cpu().numpy() for x in expected], axis=None).flatten()
     y_vals = np.concatenate([x.cpu().numpy() for x in predicted], axis=None).flatten()
+
+    mae = np.mean(np.abs(x_vals - y_vals))
     r2 = polyfit(x_vals, y_vals, 1)["determination"]
 
     myfig = plt.figure()
-    axes= myfig.add_axes([-0.1,-0.1,1,1])
+    axes= myfig.add_axes([0.1,0.1,1,1])
     axes.scatter(x_vals, y_vals, alpha = 0.5)
     myfig.savefig(outfile)
 
-    print(f"R squared in testing is {r2}")
+    print(f"\n\n>>Evaluation Results: Rsq: {r2}, MAE: {mae}")
     return expected, predicted
 
 
