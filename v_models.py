@@ -18,7 +18,7 @@ class resnet_10r(resnet_10c):
     def __init__(self, block=models.resnet.BasicBlock, layers=[2, 2, 2, 2]):
         self.inplanes = 64
         super(resnet_10r, self).__init__(block, layers, num_classes=2)
-        self.fc = nn.Linear(model.fc.in_features, 1)
+        self.fc = nn.Linear(self.fc.in_features, 1)
         self.smax = nn.LogSoftmax(1)
 
     def forward(self, x):
