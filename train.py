@@ -155,7 +155,7 @@ def main(
     testloader = torch.utils.data.DataLoader(
         testdata, batch_size=1, shuffle=True, num_workers=5
     )
-    testloader = DeviceDataLoader(trainloader, device=device)
+    testloader = DeviceDataLoader(testloader, device=device)
 
     for epoch in range(epochs):  # loop over the dataset multiple times
 
