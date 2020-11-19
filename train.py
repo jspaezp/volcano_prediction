@@ -104,7 +104,7 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
 
             curr_epoch_loss = epoch_loss / (i + 1)
 
-            prog_bar.set_postfix({'epoch_loss': curr_epoch_loss, 'running_loss': curr_running_loss})
+            prog_bar.set_postfix({'epoch_loss': curr_epoch_loss, 'running_loss': curr_running_loss, 'last_out': outputs})
 
             if i % 100 == 99:  # print every 200 mini-batches
                 curr_running_loss = running_loss / 100

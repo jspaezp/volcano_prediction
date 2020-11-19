@@ -1,11 +1,11 @@
 import numpy as np
-from v_models import resnet_10c
+from v_models import resnet_10r
 from v_cwt import file_to_cwt_array
 import torchvision.models as models
 import torch
 
 
-model = resnet_10c(models.resnet.BasicBlock, [2, 2, 2, 2], num_classes=4)
+model = resnet_10r(models.resnet.BasicBlock, [2, 2, 2, 2])
 
 model.eval()
 

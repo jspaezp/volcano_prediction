@@ -21,7 +21,7 @@ class resnet_10r(resnet_10c):
         self.inplanes = 64
         super(resnet_10r, self).__init__(block, layers, num_classes=1)
         self.lin = nn.Linear(self.fc.out_features, 1)
-        self.rel = nn.ReLU()
+        self.rel = nn.LeakyReLU()
 
     def forward(self, x):
         x = super(resnet_10r, self).forward(x)
