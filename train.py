@@ -132,6 +132,7 @@ def main(
     iter=2000,
     lr=0.01,
     device=get_default_device(),
+    batch_size=16,
 ):
     print(f"Device that will be used is {device}")
 
@@ -148,13 +149,13 @@ def main(
 
     traindata = tensorLoader(train_set, data_path)
     trainloader = torch.utils.data.DataLoader(
-        traindata, batch_size=1, shuffle=True, num_workers=5
+        traindata, batch_size=batch_size, shuffle=True, num_workers=5
     )
     trainloader = DeviceDataLoader(trainloader, device=device)
 
     testdata = tensorLoader(test_set, data_path)
     testloader = torch.utils.data.DataLoader(
-        testdata, batch_size=1, shuffle=True, num_workers=5
+        testdata, batch_size=batch_size, shuffle=True, num_workers=5
     )
     testloader = DeviceDataLoader(testloader, device=device)
 
