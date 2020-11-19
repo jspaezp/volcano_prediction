@@ -115,6 +115,7 @@ def evaluate(net, testloader):
             outputs = net(images)
             predicted.append(outputs)
             expected.append(labels)
+        prog_bar.close()
 
     x_vals = np.stack([x.cpu().numpy() for x in expected]).flatten()
     y_vals = np.stack([x.cpu().numpy() for x in predicted]).flatten()
@@ -203,6 +204,7 @@ def main(
                 prog_bar.close()
                 break
 
+        prog_bar.close()
         expected, predicted = evaluate(net, testloader)
 
     print("Finished Training")
