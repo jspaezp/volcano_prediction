@@ -1,4 +1,5 @@
 import torch
+import math
 from torch.utils.data import Dataset
 from pathlib import Path
 import pandas as pd
@@ -14,7 +15,7 @@ class tensorLoader(Dataset):
         for i, (x, y) in enumerate(my_iter):
             db_map.update({x: i})
             x = str(x)
-            y = torch.tensor(float(y))
+            y = torch.tensor(math.log10(float(y)))
             db.append({"path": (Path(filepath) / f"{x}.pt"), "value": y})
 
         self.db = db
