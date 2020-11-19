@@ -10,6 +10,8 @@ import torch.nn as nn
 from v_models import resnet_10r
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 # TODO this name is misleading because it is not really a loader
 class tensorLoader(Dataset):
     def __init__(self, train_df, filepath):
@@ -104,7 +106,7 @@ def polyfit(x, y, degree):
     return results
 
 
-def evaluate(net, testloader):
+def evaluate(net, testloader, outfile = "file.png"):
     print("Started Evaluation")
     expected = []
     predicted = []
@@ -120,6 +122,11 @@ def evaluate(net, testloader):
     x_vals = np.concatenate([x.cpu().numpy() for x in expected], axis=None).flatten()
     y_vals = np.concatenate([x.cpu().numpy() for x in predicted], axis=None).flatten()
     r2 = polyfit(x_vals, y_vals, 1)["determination"]
+
+    myfig = plt.figure()
+    axes= myfig.add_axes([-0.1,-0.1,1,1])
+    axes.scatter(x_vals, y_vals, alpha = 0.5)
+    myfig.savefig(outfile)
 
     print(f"R squared in testing is {r2}")
     return expected, predicted
@@ -206,7 +213,7 @@ def main(
                 break
 
         prog_bar.close()
-        expected, predicted = evaluate(net, testloader)
+        expected, predicted = evaluate(net, testloader, f"epoch_{e}.png")
 
     print("Finished Training")
     return net
