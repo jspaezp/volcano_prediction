@@ -213,7 +213,7 @@ def main(
                 break
 
         prog_bar.close()
-        expected, predicted = evaluate(net, testloader, f"epoch_{e}.png")
+        expected, predicted = evaluate(net, testloader, f"epoch_{epoch}.png")
 
     print("Finished Training")
     return net
