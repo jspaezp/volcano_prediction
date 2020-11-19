@@ -5,6 +5,36 @@ import torch.nn.functional as nnf
 import torchvision.models as models
 
 
+class densenet_10r(models.densenet.DenseNet):
+    """
+    densenet_10r Modified version of DenseNet
+
+    It modifies DenseNet to take 10 input channels and do regression instead of
+    classification
+    """
+
+    __doc__ += models.densenet.DenseNet.__doc__
+
+    def __init__(self, num_init_features: int = 64, *args, **kwargs) -> None:
+        super(densenet_10r, self).__init__(
+            num_init_features=num_init_features, num_classes=1, *args, **kwargs
+        )
+        self.conv0 = nn.Conv2d(
+            10,
+            num_init_features,
+            kernel_size=(7, 7),
+            stride=(2, 2),
+            padding=(3, 3),
+            bias=False,
+        )
+        self.rel = nn.LeakyReLU()
+
+    def forward(self, x):
+        x = super(densenet_10r, self).forward(x)
+        x = self.rel(x)
+        return x
+
+
 class resnet_10c(models.resnet.ResNet):
     def __init__(
         self, block=models.resnet.BasicBlock, layers=[2, 2, 2, 2], num_classes=4

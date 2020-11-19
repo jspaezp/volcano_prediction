@@ -53,7 +53,7 @@ class tensorLoader(Dataset):
         data_tensor = torch.load(item["path"])
         # print(data_tensor.shape)
         if self.shuffle_channels == True:
-            data_tensor = self.shuffler(data_tensor)            
+            data_tensor = self.shuffler(data_tensor)
 
         return data_tensor[0, :, :, :], item["value"]
 
@@ -151,56 +151,19 @@ def evaluate(net, testloader, outfile="file.png", prefix="Train", epoch=0, write
     return expected, predicted, metrics
 
 
-def main(
-    train_file="train.csv",
-    data_path=Path("./train-tensors"),
-    epochs=2,
-    iter=2000,
-    lr=0.01,
-    device=get_default_device(),
-    batch_size=16,
-    checkpoint_dir=".",
-    resnet_layers=[2, 2, 2, 2],
-    prefix="resnet16",
+def train_loop(
+    net,
+    trainloader,
+    testloader,
+    valloader,
+    criterion,
+    optimizer,
+    epochs,
+    prefix,
+    writer=None,
+    out_dir=".",
+    niter=2000,
 ):
-    print(f"Device that will be used is {device}")
-
-    # Tensorboard settings
-    writer = SummaryWriter()
-
-    # Network settings
-    net = resnet_10r(layers=resnet_layers)
-    to_device(net, device)
-
-    # Optimizer and loss settings
-    criterion = nn.MSELoss()
-    optimizer = optim.Adam(net.parameters(), lr=lr)
-
-    # Dataset Loader Settings
-    df = pd.read_csv(train_file)
-    df_copy = df.copy()
-    train_set, validate_set, test_set = np.split(
-        df.sample(frac=1, random_state=42), [int(0.8 * len(df)), int(0.9 * len(df))]
-    )
-
-    traindata = tensorLoader(pd.concat([train_set, test_set]), data_path, shuffle_channels=True)
-    trainloader = torch.utils.data.DataLoader(
-        traindata, batch_size=batch_size, shuffle=True, num_workers=5
-    )
-    trainloader = DeviceDataLoader(trainloader, device=device)
-
-    testdata = tensorLoader(test_set, data_path)
-    testloader = torch.utils.data.DataLoader(
-        testdata, batch_size=batch_size, shuffle=True, num_workers=5
-    )
-    testloader = DeviceDataLoader(testloader, device=device)
-
-    valdata = tensorLoader(validate_set, data_path)
-    valloader = torch.utils.data.DataLoader(
-        valdata, batch_size=batch_size, shuffle=True, num_workers=5
-    )
-    valloader = DeviceDataLoader(valloader, device=device)
-
     # Train Loop
     for epoch in range(epochs):  # loop over the dataset multiple times
 
@@ -244,7 +207,7 @@ def main(
                 # print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, curr_running_loss))
                 running_loss = 0.0
 
-            if i >= iter:
+            if i >= niter:
                 prog_bar.close()
                 break
 
@@ -252,14 +215,24 @@ def main(
 
         # Model evaluations
         expected, predicted, test_metrics = evaluate(
-            net, testloader, f"epoch_{epoch}.png", prefix=f"{prefix}_test", epoch=epoch, writer=writer
+            net,
+            testloader,
+            f"{prefix}_epoch_{epoch}.png",
+            prefix=f"{prefix}_test",
+            epoch=epoch,
+            writer=writer,
         )
         expected, predicted, val_metrics = evaluate(
-            net, valloader, f"val_epoch_{epoch}.png", prefix=f"{prefix}_val", epoch=epoch, writer=writer
+            net,
+            valloader,
+            f"{prefix}_val_epoch_{epoch}.png",
+            prefix=f"{prefix}_val",
+            epoch=epoch,
+            writer=writer,
         )
 
         # Save Model
-        checkpoint_path = Path(checkpoint_dir)
+        checkpoint_path = Path(out_dir)
         checkpoint_path = (
             checkpoint_path / f"{prefix}_l_{epoch_loss / (i + 1):.4f}_e_{epoch}.pt"
         )
@@ -269,6 +242,73 @@ def main(
     return net
 
 
+def train(
+    net,
+    train_file="train.csv",
+    data_path=Path("./train-tensors"),
+    epochs=2,
+    niter=2000,
+    lr=0.01,
+    device=get_default_device(),
+    batch_size=16,
+    checkpoint_dir=".",
+    prefix="resnet16",
+):
+    print(f"Device that will be used is {device}")
+
+    # Tensorboard settings
+    writer = SummaryWriter()
+
+    # Network settings
+    to_device(net, device)
+
+    # Optimizer and loss settings
+    criterion = nn.MSELoss()
+    optimizer = optim.Adam(net.parameters(), lr=lr)
+
+    # Dataset Loader Settings
+    df = pd.read_csv(train_file)
+    df_copy = df.copy()
+    train_set, validate_set, test_set = np.split(
+        df.sample(frac=1, random_state=42), [int(0.8 * len(df)), int(0.9 * len(df))]
+    )
+
+    traindata = tensorLoader(
+        pd.concat([train_set, test_set]), data_path, shuffle_channels=True
+    )
+    trainloader = torch.utils.data.DataLoader(
+        traindata, batch_size=batch_size, shuffle=True, num_workers=5
+    )
+    trainloader = DeviceDataLoader(trainloader, device=device)
+
+    testdata = tensorLoader(test_set, data_path)
+    testloader = torch.utils.data.DataLoader(
+        testdata, batch_size=batch_size, shuffle=True, num_workers=5
+    )
+    testloader = DeviceDataLoader(testloader, device=device)
+
+    valdata = tensorLoader(validate_set, data_path)
+    valloader = torch.utils.data.DataLoader(
+        valdata, batch_size=batch_size, shuffle=True, num_workers=5
+    )
+    valloader = DeviceDataLoader(valloader, device=device)
+
+    net = train_loop(
+        net=net,
+        trainloader=trainloader,
+        testloader=testloader,
+        valloader=valloader,
+        criterion=criterion,
+        optimizer=optimizer,
+        epochs=epochs,
+        prefix=prefix,
+        writer=writer,
+        out_dir=checkpoint_dir,
+        niter=niter,
+    )
+    return net
+
+
 if __name__ == "__main__":
 
-    main()
+    train()
