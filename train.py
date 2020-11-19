@@ -108,7 +108,7 @@ def polyfit(x, y, degree):
     return results
 
 
-def evaluate(net, testloader, outfile = "file.png"):
+def evaluate(net, testloader, outfile="file.png"):
     print("Started Evaluation")
     expected = []
     predicted = []
@@ -128,8 +128,8 @@ def evaluate(net, testloader, outfile = "file.png"):
     r2 = polyfit(x_vals, y_vals, 1)["determination"]
 
     myfig = plt.figure()
-    axes= myfig.add_axes([0.1,0.1,1,1])
-    axes.scatter(x_vals, y_vals, alpha = 0.5)
+    axes = myfig.add_axes([0.1, 0.1, 1, 1])
+    axes.scatter(x_vals, y_vals, alpha=0.5)
     myfig.savefig(outfile)
 
     print(f"\n\n>>Evaluation Results: Rsq: {r2}, MAE: {mae}")
@@ -144,7 +144,7 @@ def main(
     lr=0.01,
     device=get_default_device(),
     batch_size=16,
-    checkpoint_dir = ".",
+    checkpoint_dir=".",
 ):
     print(f"Device that will be used is {device}")
 
@@ -156,10 +156,11 @@ def main(
 
     df = pd.read_csv(train_file)
     df_copy = df.copy()
-    train_set = df.sample(frac=0.95, random_state=0)
-    test_set = df_copy.drop(train_set.index)
+    train_set, validate_set, test_set = np.split(
+        df.sample(frac=1, random_state=42), [int(0.8 * len(df)), int(0.9 * len(df))]
+    )
 
-    traindata = tensorLoader(train_set, data_path)
+    traindata = tensorLoader(pd.concat([train_set, test_set]), data_path)
     trainloader = torch.utils.data.DataLoader(
         traindata, batch_size=batch_size, shuffle=True, num_workers=5
     )
@@ -170,6 +171,12 @@ def main(
         testdata, batch_size=batch_size, shuffle=True, num_workers=5
     )
     testloader = DeviceDataLoader(testloader, device=device)
+
+    valdata = tensorLoader(validate_set, data_path)
+    valloader = torch.utils.data.DataLoader(
+        valdata, batch_size=batch_size, shuffle=True, num_workers=5
+    )
+    valloader = DeviceDataLoader(valloader, device=device)
 
     for epoch in range(epochs):  # loop over the dataset multiple times
 
@@ -219,9 +226,12 @@ def main(
 
         prog_bar.close()
         expected, predicted = evaluate(net, testloader, f"epoch_{epoch}.png")
+        expected, predicted = evaluate(net, valloader, f"val_epoch_{epoch}.png")
 
         checkpoint_path = Path(checkpoint_dir)
-        checkpoint_path = checkpoint_path / f"model_l_{epoch_loss / (i + 1)}_e_{epoch}.pt"
+        checkpoint_path = (
+            checkpoint_path / f"model_l_{epoch_loss / (i + 1)}_e_{epoch}.pt"
+        )
         torch.save(net.state_dict(), checkpoint_path)
 
     print("Finished Training")
