@@ -56,10 +56,10 @@ def evaluate(net, testloader):
     return expected, predicted
             
 
-def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs = 2, iter = 2000):
+def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs = 2, iter = 2000, lr = 0.01):
     net = resnet_10r()
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(net.parameters(), lr=0.01)
+    optimizer = optim.Adam(net.parameters(), lr=lr)
 
     df = pd.read_csv(train_file)
     df_copy = df.copy()

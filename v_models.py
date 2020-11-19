@@ -20,13 +20,13 @@ class resnet_10r(resnet_10c):
     def __init__(self, block=models.resnet.BasicBlock, layers=[2, 2, 2, 2]):
         self.inplanes = 64
         super(resnet_10r, self).__init__(block, layers, num_classes=1)
-        # self.lin = nn.Linear(self.fc.out_features, 1)
+        self.lin = nn.Linear(self.fc.out_features, 1)
         self.rel = nn.ReLU()
 
     def forward(self, x):
         x = super(resnet_10r, self).forward(x)
-        # x = self.lin(x)
-        # x = self.rel(x)
+        x = self.lin(x)
+        x = self.rel(x)
         return x
 
 
@@ -62,7 +62,8 @@ if __name__ == "__main__":
     print(ouput)
 
     print(">>>>>>> Out for resnet 10r")
-    model = resnet_10r()
-    ouput = model(x_image)
-    print(ouput)
-    print(model.parameters)
+    for _ in range(20):
+        model = resnet_10r()
+        ouput = model(x_image)
+        print(ouput)
+    # print(model.parameters)
