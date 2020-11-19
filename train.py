@@ -114,7 +114,7 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
             if i >= iter:
                 break
 
-        expected, predicted = evaluate(nn, testloader)
+        expected, predicted = evaluate(net, testloader)
 
     print("Finished Training")
     return net
