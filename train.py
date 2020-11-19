@@ -10,6 +10,7 @@ import torch.nn as nn
 from v_models import resnet_10r
 import numpy as np
 
+# TODO this name is misleading because it is not really a loader
 class tensorLoader(Dataset):
     def __init__(self, train_df, filepath):
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
@@ -43,8 +44,42 @@ class tensorLoader(Dataset):
         item = self.db[index]
         data_tensor = torch.load(item["path"])
         # print(data_tensor.shape)
-        return data_tensor[0,:,:,:], item["value"]
+        return data_tensor[0, :, :, :], item["value"]
 
+
+# GPU usage gotten from:
+# https://medium.com/analytics-vidhya/training-deep-neural-networks-on-a-gpu-with-pytorch-2851ccfb6066
+# torch.cuda.is_available()
+def get_default_device():
+    """Pick GPU if available, else CPU"""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    else:
+        return torch.device("cpu")
+
+
+def to_device(data, device):
+    """Move tensor(s) to chosen device"""
+    if isinstance(data, (list, tuple)):
+        return [to_device(x, device) for x in data]
+    return data.to(device, non_blocking=True)
+
+
+class DeviceDataLoader:
+    """Wrap a dataloader to move data to a device"""
+
+    def __init__(self, dl, device=get_default_device()):
+        self.dl = dl
+        self.device = device
+
+    def __iter__(self):
+        """Yield a batch of data after moving it to device"""
+        for b in self.dl:
+            yield to_device(b, self.device)
+
+    def __len__(self):
+        """Number of batches"""
+        return len(self.dl)
 
 
 # Polynomial Regression
@@ -54,17 +89,17 @@ def polyfit(x, y, degree):
 
     coeffs = np.polyfit(x, y, degree)
 
-     # Polynomial Coefficients
-    results['polynomial'] = coeffs.tolist()
+    # Polynomial Coefficients
+    results["polynomial"] = coeffs.tolist()
 
     # r-squared
     p = np.poly1d(coeffs)
     # fit values, and mean
-    yhat = p(x)                         # or [p(z) for z in x]
-    ybar = np.sum(y)/len(y)          # or sum(y)/len(y)
-    ssreg = np.sum((yhat-ybar)**2)   # or sum([ (yihat - ybar)**2 for yihat in yhat])
-    sstot = np.sum((y - ybar)**2)    # or sum([ (yi - ybar)**2 for yi in y])
-    results['determination'] = ssreg / sstot
+    yhat = p(x)  # or [p(z) for z in x]
+    ybar = np.sum(y) / len(y)  # or sum(y)/len(y)
+    ssreg = np.sum((yhat - ybar) ** 2)  # or sum([ (yihat - ybar)**2 for yihat in yhat])
+    sstot = np.sum((y - ybar) ** 2)  # or sum([ (yi - ybar)**2 for yi in y])
+    results["determination"] = ssreg / sstot
 
     return results
 
@@ -83,14 +118,25 @@ def evaluate(net, testloader):
 
     x_vals = np.stack([x.numpy() for x in expected]).flatten()
     y_vals = np.stack([x.numpy() for x in predicted]).flatten()
-    r2 = polyfit(x_vals, y_vals, 1)['determination']
+    r2 = polyfit(x_vals, y_vals, 1)["determination"]
 
     print(f"R squared in testing is {r2}")
     return expected, predicted
-            
 
-def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs = 2, iter = 2000, lr = 0.01):
+
+def main(
+    train_file="train.csv",
+    data_path=Path("./train-tensors"),
+    epochs=2,
+    iter=2000,
+    lr=0.01,
+    device=get_default_device(),
+):
+    print(f"Device that will be used is {device}")
+
     net = resnet_10r()
+    to_device(net, device)
+
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr=lr)
 
@@ -103,11 +149,13 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
     trainloader = torch.utils.data.DataLoader(
         traindata, batch_size=1, shuffle=True, num_workers=5
     )
+    trainloader = DeviceDataLoader(trainloader, device=device)
 
     testdata = tensorLoader(test_set, data_path)
     testloader = torch.utils.data.DataLoader(
         testdata, batch_size=1, shuffle=True, num_workers=5
     )
+    testloader = DeviceDataLoader(trainloader, device=device)
 
     for epoch in range(epochs):  # loop over the dataset multiple times
 
@@ -137,7 +185,14 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
 
             curr_epoch_loss = epoch_loss / (i + 1)
 
-            prog_bar.set_postfix({'epoch_loss': curr_epoch_loss, 'running_loss': curr_running_loss, 'last_out': flat_out})
+            prog_bar.set_postfix(
+                {
+                    "e": epoch,
+                    "epoch_loss": curr_epoch_loss,
+                    "running_loss": curr_running_loss,
+                    "last_out": flat_out,
+                }
+            )
 
             if i % 100 == 99:  # print every 200 mini-batches
                 curr_running_loss = running_loss / 100
@@ -145,12 +200,14 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
                 running_loss = 0.0
 
             if i >= iter:
+                prog_bar.close()
                 break
 
         expected, predicted = evaluate(net, testloader)
 
     print("Finished Training")
     return net
+
 
 if __name__ == "__main__":
 
