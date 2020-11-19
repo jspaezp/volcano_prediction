@@ -97,7 +97,7 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
 
             # forward + backward + optimize
             outputs = net(inputs)
-            flat_out = outputs.numpy().flatten()
+            flat_out = outputs.detach().numpy().flatten()
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
