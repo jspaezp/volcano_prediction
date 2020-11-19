@@ -1,6 +1,7 @@
 from v_cwt import file_to_cwt_array
 import torch
 from tqdm import tqdm
+import numpy as np
 
 from pathlib import Path
 import click
@@ -42,13 +43,15 @@ def cwt_dir(in_dir, out_dir):
 
     for f in tqdm(csv_files):
         out_file = out_dir / f"{f.stem}.pt"
-        
+
         if out_file.is_file():
             print(f"skipping file {str(out_file)} because it already exists!!")
             continue
 
         a = file_to_cwt_array(f, reshape_size=(224, 224))
-        torch.save(a, out_file)
+        npy_arr2 = np.stack([np.rollaxis(a, 2, 0)])
+        tensor = torch.from_numpy(npy_arr2)
+        torch.save(tensor, out_file)
 
 
 if __name__ == "__main__":
