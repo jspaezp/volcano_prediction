@@ -11,6 +11,7 @@ from v_models import resnet_10r
 import numpy as np
 
 import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 
 # TODO this name is misleading because it is not really a loader
 class tensorLoader(Dataset):
@@ -108,7 +109,9 @@ def polyfit(x, y, degree):
     return results
 
 
-def evaluate(net, testloader, outfile="file.png"):
+def evaluate(net, testloader, outfile="file.png", prefix="Train", epoch=0):
+    plt.ioff()
+
     print("Started Evaluation")
     expected = []
     predicted = []
@@ -127,13 +130,19 @@ def evaluate(net, testloader, outfile="file.png"):
     mae = np.mean(np.abs(x_vals - y_vals))
     r2 = polyfit(x_vals, y_vals, 1)["determination"]
 
+    metrics = {"mae": mae, "r2": r2}
+
+    if writer is not None:
+        writer.add_scalar(f"R2/{prefix}", r2, epoch)
+        writer.add_scalar(f"MAE/{prefix}", mae, epoch)
+
     myfig = plt.figure()
     axes = myfig.add_axes([0.1, 0.1, 1, 1])
     axes.scatter(x_vals, y_vals, alpha=0.5)
     myfig.savefig(outfile)
 
-    print(f"\n\n>>Evaluation Results: Rsq: {r2}, MAE: {mae}")
-    return expected, predicted
+    print(f"\n>>{prefix} Evaluation Results: Rsq: {r2:.4f}, MAE: {mae:.5f}\n")
+    return expected, predicted, metrics
 
 
 def main(
@@ -145,15 +154,23 @@ def main(
     device=get_default_device(),
     batch_size=16,
     checkpoint_dir=".",
+    resnet_layers=[2, 2, 2, 2],
+    prefix="resnet16",
 ):
     print(f"Device that will be used is {device}")
 
-    net = resnet_10r()
+    # Tensorboard settings
+    writer = SummaryWriter()
+
+    # Network settings
+    net = resnet_10r(layers=resnet_layers)
     to_device(net, device)
 
+    # Optimizer and loss settings
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr=lr)
 
+    # Dataset Loader Settings
     df = pd.read_csv(train_file)
     df_copy = df.copy()
     train_set, validate_set, test_set = np.split(
@@ -178,6 +195,7 @@ def main(
     )
     valloader = DeviceDataLoader(valloader, device=device)
 
+    # Train Loop
     for epoch in range(epochs):  # loop over the dataset multiple times
 
         running_loss = 0.0
@@ -225,12 +243,19 @@ def main(
                 break
 
         prog_bar.close()
-        expected, predicted = evaluate(net, testloader, f"epoch_{epoch}.png")
-        expected, predicted = evaluate(net, valloader, f"val_epoch_{epoch}.png")
 
+        # Model evaluations
+        expected, predicted, test_metrics = evaluate(
+            net, testloader, f"epoch_{epoch}.png", prefix="test", epoch=epoch
+        )
+        expected, predicted, val_metrics = evaluate(
+            net, valloader, f"val_epoch_{epoch}.png", prefix="val", epoch=epoch
+        )
+
+        # Save Model
         checkpoint_path = Path(checkpoint_dir)
         checkpoint_path = (
-            checkpoint_path / f"model_l_{epoch_loss / (i + 1)}_e_{epoch}.pt"
+            checkpoint_path / f"{prefix}_l_{epoch_loss / (i + 1):.4f}_e_{epoch}.pt"
         )
         torch.save(net.state_dict(), checkpoint_path)
 
