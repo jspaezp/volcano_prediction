@@ -42,10 +42,12 @@ class tensorLoader(Dataset):
 
 
 def evaluate(net, testloader):
+    print("Started Evaluation")
     expected = []
     predicted = []
     with torch.no_grad():
-        for data in testloader:
+        prog_bar = tqdm(testloader)
+        for data in prog_bar:
             images, labels = data
             outputs = net(images)
             predicted.append(outputs)
