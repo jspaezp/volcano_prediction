@@ -30,7 +30,9 @@ class tensorLoader(Dataset):
 
     def __getitem__(self, index):
         item = self.db[index]
-        return torch.load(item["path"]), item["value"]
+        data_tensor = torch.load(item["path"])
+        # print(data_tensor.shape)
+        return data_tensor[0,:,:,:], item["value"]
 
 
 if __name__ == "__main__":
@@ -52,9 +54,11 @@ if __name__ == "__main__":
     for epoch in range(2):  # loop over the dataset multiple times
 
         running_loss = 0.0
+        tot_running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
+            # print(inputs.shape)
 
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -67,6 +71,8 @@ if __name__ == "__main__":
 
             # print statistics
             running_loss += loss.item()
+            tot_running_loss += loss.item()
+            print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / (i + 1)))
             if i % 200 == 199:  # print every 200 mini-batches
                 print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 200))
                 running_loss = 0.0
