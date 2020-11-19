@@ -7,18 +7,20 @@ import pandas as pd
 class tensorLoader(Dataset):
     def __init__(self, train_df, filepath):
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
-        db = {}
+        db_map = {}
+        db = []
 
-        for x, y in my_iter:
-            # print(f"x = {x}, y = {y}, filepath = {filepath}")
+        for i, (x, y) in enumerate(my_iter):
+            db_map.update({x: i})
             x = str(x)
-            y = str(y)
-            db.update({x: {"path": (Path(filepath) / f"{x}.pt"), "value": y}})
-        
+            y = torch.tensor(float(y))
+            db.append({"path": (Path(filepath) / f"{x}.pt"), "value": y})
+
         self.db = db
+        self.db_map = db_map
 
         print("Validating Paths")
-        for f in self.db.values():
+        for f in self.db:
             # print(f)
             assert f["path"].is_file
         print("Validation Done")
@@ -27,9 +29,8 @@ class tensorLoader(Dataset):
         return len(self.db)
 
     def __getitem__(self, index):
-        item = list(self.db.items())[index][1]
-        print(item)
-        return torch.load(item["path"]), torch.tensor(float(int(item["value"])))
+        item = self.db[index]
+        return torch.load(item["path"]), item["value"]
 
 
 if __name__ == "__main__":
@@ -43,7 +44,10 @@ if __name__ == "__main__":
 
     train_df = pd.read_csv("train.csv")
     # .glob("*.pt")
-    trainloader = tensorLoader(train_df, Path("./train-tensors"))
+    traindata = tensorLoader(train_df, Path("./train-tensors"))
+    trainloader = torch.utils.data.DataLoader(
+        traindata, batch_size=4, shuffle=True, num_workers=2
+    )
 
     for epoch in range(2):  # loop over the dataset multiple times
 
