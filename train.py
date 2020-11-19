@@ -54,7 +54,7 @@ def evaluate(net, testloader):
     return expected, predicted
             
 
-def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs = 2):
+def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs = 2, iter = 2000):
     net = resnet_10r()
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr=0.001)
@@ -78,7 +78,7 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
     for epoch in range(epochs):  # loop over the dataset multiple times
 
         running_loss = 0.0
-        tot_running_loss = 0.0
+        epoch_loss = 0.0
         curr_running_loss = 0.0
         prog_bar = tqdm(trainloader)
 
@@ -98,16 +98,19 @@ def main(train_file = "train.csv", data_path = Path("./train-tensors"), epochs =
 
             # print statistics
             running_loss += loss.item()
-            tot_running_loss += loss.item()
+            epoch_loss += loss.item()
 
-            curr_runn_loss = running_loss / (i + 1)
+            curr_epoch_loss = epoch_loss / (i + 1)
 
-            prog_bar.set_postfix({'epoch_loss': curr_runn_loss, })
+            prog_bar.set_postfix({'epoch_loss': curr_epoch_loss, 'running_loss': curr_running_loss})
 
             if i % 100 == 99:  # print every 200 mini-batches
                 curr_running_loss = running_loss / 100
                 print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, curr_running_loss))
                 running_loss = 0.0
+
+            if i >= iter:
+                break
 
         expected, predicted = evaluate(nn, testloader)
 
