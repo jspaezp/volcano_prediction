@@ -117,8 +117,8 @@ def evaluate(net, testloader):
             expected.append(labels)
         prog_bar.close()
 
-    x_vals = np.stack([x.cpu().numpy() for x in expected]).flatten()
-    y_vals = np.stack([x.cpu().numpy() for x in predicted]).flatten()
+    x_vals = np.concatenate([x.cpu().numpy() for x in expected], axis=None).flatten()
+    y_vals = np.concatenate([x.cpu().numpy() for x in predicted], axis=None).flatten()
     r2 = polyfit(x_vals, y_vals, 1)["determination"]
 
     print(f"R squared in testing is {r2}")
