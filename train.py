@@ -116,8 +116,8 @@ def evaluate(net, testloader):
             predicted.append(outputs)
             expected.append(labels)
 
-    x_vals = np.stack([x.numpy() for x in expected]).flatten()
-    y_vals = np.stack([x.numpy() for x in predicted]).flatten()
+    x_vals = np.stack([x.cpu().numpy() for x in expected]).flatten()
+    y_vals = np.stack([x.cpu().numpy() for x in predicted]).flatten()
     r2 = polyfit(x_vals, y_vals, 1)["determination"]
 
     print(f"R squared in testing is {r2}")
@@ -174,7 +174,7 @@ def main(
 
             # forward + backward + optimize
             outputs = net(inputs)
-            flat_out = outputs.detach().numpy().flatten()
+            flat_out = outputs.cpu().detach().numpy().flatten()
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
