@@ -11,19 +11,22 @@ class resnet_10c(models.resnet.ResNet):
     ):
         self.inplanes = 64
         super(resnet_10c, self).__init__(block, layers, num_classes=num_classes)
+
+        # This makes the input be 10 channels and not 3
         self.conv1 = nn.Conv2d(10, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
 
 class resnet_10r(resnet_10c):
     def __init__(self, block=models.resnet.BasicBlock, layers=[2, 2, 2, 2]):
         self.inplanes = 64
-        super(resnet_10r, self).__init__(block, layers, num_classes=2)
-        self.fc = nn.Linear(self.fc.in_features, 1)
-        self.smax = nn.LogSoftmax(1)
+        super(resnet_10r, self).__init__(block, layers, num_classes=1)
+        # self.lin = nn.Linear(self.fc.out_features, 1)
+        self.rel = nn.ReLU()
 
     def forward(self, x):
         x = super(resnet_10r, self).forward(x)
-        x = self.smax(x)
+        # x = self.lin(x)
+        # x = self.rel(x)
         return x
 
 
@@ -49,22 +52,17 @@ if __name__ == "__main__":
     model = MyModel()
     model.fc = nn.Linear(2048, 1)
 
-    ouput = model(x_image)
     print(">>>>>>> Out for MyModel, replacing last layer")
+    ouput = model(x_image)
     print(ouput.shape)
 
+    print(">>>>>>> Out for resnet 10c")
     model = resnet_10c()
     ouput = model(x_image)
-    print(">>>>>>> Out for resnet 10c")
     print(ouput)
 
-    model.fc = nn.Linear(model.fc.in_features, 1)
-    ouput = model(x_image)
-    print(">>>>>>> Out for resnet 10c, changing last layer")
-    print(ouput)
-
+    print(">>>>>>> Out for resnet 10r")
     model = resnet_10r()
     ouput = model(x_image)
-    print(">>>>>>> Out for resnet 10r")
     print(ouput)
     print(model.parameters)
