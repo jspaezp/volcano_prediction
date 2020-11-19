@@ -109,7 +109,7 @@ def polyfit(x, y, degree):
     return results
 
 
-def evaluate(net, testloader, outfile="file.png", prefix="Train", epoch=0):
+def evaluate(net, testloader, outfile="file.png", prefix="Train", epoch=0, writer=None):
     plt.ioff()
 
     print("Started Evaluation")
@@ -246,10 +246,10 @@ def main(
 
         # Model evaluations
         expected, predicted, test_metrics = evaluate(
-            net, testloader, f"epoch_{epoch}.png", prefix=f"{prefix}_test", epoch=epoch
+            net, testloader, f"epoch_{epoch}.png", prefix=f"{prefix}_test", epoch=epoch, writer=writer
         )
         expected, predicted, val_metrics = evaluate(
-            net, valloader, f"val_epoch_{epoch}.png", prefix=f"{prefix}_val", epoch=epoch
+            net, valloader, f"val_epoch_{epoch}.png", prefix=f"{prefix}_val", epoch=epoch, writer=writer
         )
 
         # Save Model
