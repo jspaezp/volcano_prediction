@@ -75,7 +75,9 @@ if __name__ == "__main__":
             running_loss += loss.item()
             tot_running_loss += loss.item()
 
-            prog_bar.set_postfix({'running_loss': running_loss / (i + 1)})
+            curr_runn_loss = running_loss / (i + 1)
+
+            prog_bar.set_postfix({'running_loss': curr_runn_loss})
 
             if i % 200 == 199:  # print every 200 mini-batches
                 print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, running_loss / 200))
