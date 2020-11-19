@@ -246,10 +246,10 @@ def main(
 
         # Model evaluations
         expected, predicted, test_metrics = evaluate(
-            net, testloader, f"epoch_{epoch}.png", prefix="test", epoch=epoch
+            net, testloader, f"epoch_{epoch}.png", prefix=f"{prefix}_test", epoch=epoch
         )
         expected, predicted, val_metrics = evaluate(
-            net, valloader, f"val_epoch_{epoch}.png", prefix="val", epoch=epoch
+            net, valloader, f"val_epoch_{epoch}.png", prefix=f"{prefix}_val", epoch=epoch
         )
 
         # Save Model
