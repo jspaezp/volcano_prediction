@@ -87,12 +87,12 @@ class tensorLoader(Dataset):
 
     def __getitem__(self, index):
         item = self.db[index]
-        file_path = item["path"]
+        file_path = str(item["path"])
 
         if self.cache and file_path not in tensorLoader.cache:
             # Tensors are of shape
             # (1, 10, x, x), being 10 channels
-            tensorLoader.cache[file_path] = torch.load(file_path)[0, :, :, :]
+            tensorLoader.cache.update({file_path: torch.load(file_path)[0, :, :, :]})
 
         data_tensor = tensorLoader.cache[file_path]
 
