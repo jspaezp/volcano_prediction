@@ -1,5 +1,4 @@
 import torch
-import math
 from torch.utils.data import Dataset
 from pathlib import Path
 import pandas as pd
@@ -11,13 +10,33 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
+import random
 
+
+def shuffle_channels(a, axis = 2):
+    ret_a = list(torch.split(a, 1, axis))
+    # print([x.shape for x in ret_a])
+    random.shuffle(ret_a)
+    ret_a = torch.cat(ret_a, axis)
+    # print(ret_a.shape)
+    return ret_a
+
+def test_shuffle_channels():
+    samp_arr = torch.stack([torch.ones((10,10)), torch.zeros(10,10)])
+    orig_shape = samp_arr.shape
+    for i in [0, 1, 2]:
+        assert orig_shape == shuffle_channels(samp_arr, i).shape
+
+    arr_1 = torch.ones((4,4))
+    arr_2 = torch.arange(16).reshape((4,4))
+    samp_arr = torch.stack([arr_1, arr_2])
+    shuffle_channels(samp_arr, 0)
+
+    
 # TODO this name is misleading because it is not really a loader
 class tensorLoader(Dataset):
     def __init__(self, train_df, filepath, shuffle_channels=False):
         self.shuffle_channels = shuffle_channels
-        # Implemented in torch 1.8
-        self.shuffler = nn.ChannelShuffle(2)
 
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
         db_map = {}
@@ -50,12 +69,13 @@ class tensorLoader(Dataset):
 
     def __getitem__(self, index):
         item = self.db[index]
-        data_tensor = torch.load(item["path"])
-        # print(data_tensor.shape)
+        # Tensors are of shape
+        # (1, 10, x, x), being 10 channels
+        data_tensor = torch.load(item["path"])[0, :, :, :]
         if self.shuffle_channels == True:
-            data_tensor = self.shuffler(data_tensor)
+            data_tensor = shuffle_channels(data_tensor, 0)
 
-        return data_tensor[0, :, :, :], item["value"]
+        return data_tensor, item["value"]
 
 
 # GPU usage gotten from:
