@@ -1,6 +1,6 @@
 from v_cwt import file_to_cwt_array
 import torch
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 
 from pathlib import Path
