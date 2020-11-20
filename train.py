@@ -188,10 +188,10 @@ def train_loop(
     out_dir=".",
     niter=2000,
 ):
-    print("\n\n>>>> Prefix: {prefix} <<<<\n\n")
+    print(f"\n\n>>>> Prefix: {prefix} <<<<\n\n")
     # Train Loop
     for epoch in range(epochs):  # loop over the dataset multiple times
-        print("\n>> Epoch: {epoch} <<\n")
+        print(f"\n>> Epoch: {epoch} <<\n")
 
         i = 0
         running_loss = 0.0
@@ -241,7 +241,6 @@ def train_loop(
             testloader,
             f"{prefix}_epoch_{epoch}.png",
             prefix=f"{prefix}_test",
-            epoch=epoch,
             writer=writer,
         )
         writer.add_scalar(f"Test_R2/{prefix}", test_metrics['r2'], epoch)
