@@ -79,6 +79,7 @@ def test_resnet_10r():
         print(ouput)
     # print(model.parameters)
 
+
 #
 class MyModel(nn.Module):
     def __init__(self):

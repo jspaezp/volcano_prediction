@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+import time
 import torch.optim as optim
 import torch.nn as nn
 import numpy as np
@@ -32,9 +33,11 @@ def test_shuffle_channels():
     img_like_array = torch.stack([x * torch.ones((10, 10)) for x in range(4)])
     shuffled_img_like = shuffle_channels(img_like_array, 0)
     for i in range(4):
-        assert torch.std(shuffled_img_like[i,:,:]) == 0
-        
-    img_like_array = torch.stack([x * torch.arange(100).reshape((10,10)) for x in range(4)])
+        assert torch.std(shuffled_img_like[i, :, :]) == 0
+
+    img_like_array = torch.stack(
+        [x * torch.arange(100).reshape((10, 10)) for x in range(4)]
+    )
     shuffled_img_like = shuffle_channels(img_like_array, 0)
     # shuffled_img_like
     # img_like_array
@@ -79,7 +82,7 @@ class tensorLoader(Dataset):
         # Tensors are of shape
         # (1, 10, x, x), being 10 channels
         data_tensor = torch.load(item["path"])[0, :, :, :]
-        
+
         if self.shuffle_channels == True:
             data_tensor = shuffle_channels(data_tensor, 0)
 
@@ -143,33 +146,40 @@ def polyfit(x, y, degree):
     return results
 
 
-def evaluate(net, testloader, outfile="file.png", prefix="Train"):
+def evaluate(net, testloader, outfile="file.png", prefix="Train", verbose=True):
     plt.ioff()
 
     expected = []
     predicted = []
     with torch.no_grad():
-        prog_bar = tqdm(testloader)
-        for data in prog_bar:
+        if verbose:
+            data_iterator = tqdm(testloader)
+        else:
+            data_iterator = testloader
+
+        for data in data_iterator:
             images, labels = data
             outputs = net(images)
             predicted.append(outputs)
             expected.append(labels)
-        prog_bar.close()
+
+        if verbose:
+            data_iterator.close()
 
     x_vals = np.concatenate([x.cpu().numpy() for x in expected], axis=None).flatten()
     y_vals = np.concatenate([x.cpu().numpy() for x in predicted], axis=None).flatten()
 
+    mse = np.mean((x_vals - y_vals) ** 2)
     mae = np.mean(np.abs(x_vals - y_vals))
     r2 = polyfit(x_vals, y_vals, 1)["determination"]
 
-    metrics = {"mae": mae, "r2": r2}
-
+    metrics = {"mae": mae, "r2": r2, "mse": mse}
 
     myfig = plt.figure()
     axes = myfig.add_axes([0.1, 0.1, 1, 1])
     axes.scatter(x_vals, y_vals, alpha=0.5)
     myfig.savefig(outfile)
+    plt.close(myfig)
 
     print(f"\n>>{prefix} Evaluation Results: Rsq: {r2:.4f}, MAE: {mae:.5f}\n")
     return expected, predicted, metrics
@@ -189,9 +199,10 @@ def train_loop(
     niter=2000,
 ):
     print(f"\n\n>>>> Prefix: {prefix} <<<<\n\n")
+    start_time = time.time()
     # Train Loop
     for epoch in range(epochs):  # loop over the dataset multiple times
-        print(f"\n>> Epoch: {epoch} <<\n")
+        print(f"\n>> {prefix} Epoch: {epoch} <<\n")
 
         i = 0
         running_loss = 0.0
@@ -208,10 +219,10 @@ def train_loop(
 
             # forward + backward + optimize
             outputs = net(inputs)
-            flat_out = outputs.cpu().detach().numpy().flatten()[0]
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+            flat_out = outputs.cpu().detach().numpy().flatten()[0]
 
             # print statistics
             running_loss += loss.item()
@@ -240,20 +251,23 @@ def train_loop(
             net,
             testloader,
             f"{prefix}_epoch_{epoch}.png",
-            prefix=f"{prefix}_test"
+            prefix=f"{prefix}_test",
+            verbose=False,
         )
-        writer.add_scalar(f"Test_R2/{prefix}", test_metrics['r2'], epoch)
-        writer.add_scalar(f"Test_MAE/{prefix}", test_metrics['mae'], epoch)
+        writer.add_scalar(f"Test_R2/{prefix}", test_metrics["r2"], epoch)
+        writer.add_scalar(f"Test_MAE/{prefix}", test_metrics["mae"], epoch)
+        writer.add_scalar(f"Test_MSE/{prefix}", test_metrics["mse"], epoch)
 
         expected, predicted, val_metrics = evaluate(
             net,
             valloader,
             f"{prefix}_val_epoch_{epoch}.png",
             prefix=f"{prefix}_val",
+            verbose=False,
         )
-        writer.add_scalar(f"Val_R2/{prefix}", val_metrics['r2'], epoch)
-        writer.add_scalar(f"Val_MAE/{prefix}", val_metrics['mae'], epoch)
-
+        writer.add_scalar(f"Val_R2/{prefix}", val_metrics["r2"], epoch)
+        writer.add_scalar(f"Val_MAE/{prefix}", val_metrics["mae"], epoch)
+        writer.add_scalar(f"Val_MSE/{prefix}", val_metrics["mse"], epoch)
 
         # Save Model
         checkpoint_path = Path(out_dir)
@@ -262,7 +276,8 @@ def train_loop(
         )
         torch.save(net.state_dict(), checkpoint_path)
 
-    print("Finished Training")
+    minutes_taken = (time.time() - start_time) / 60
+    print(f"Finished Training, took {minutes_taken:.3f} minutes to run")
     return net
 
 
