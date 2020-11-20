@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 from pathlib import Path
 import pandas as pd
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 import time
 import torch.optim as optim
