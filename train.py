@@ -186,7 +186,7 @@ def evaluate(net, testloader, outfile="file.png", prefix="Train", verbose=True):
     myfig.savefig(outfile)
     plt.close(myfig)
 
-    print(f">>{prefix} Evaluation Results: Rsq: {r2:.4f}, MAE: {mae:.5f}")
+    print(f">>{prefix} Evaluation Results: Rsq: {r2:.4f}, MAE: {mae:.5f}, MSE: {mse:.5f}")
     return expected, predicted, metrics
 
 
