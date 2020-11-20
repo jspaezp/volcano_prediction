@@ -16,6 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 class tensorLoader(Dataset):
     def __init__(self, train_df, filepath, shuffle_channels=False):
         self.shuffle_channels = shuffle_channels
+        # Implemented in torch 1.8
         self.shuffler = nn.ChannelShuffle(2)
 
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
@@ -166,6 +167,7 @@ def train_loop(
     # Train Loop
     for epoch in range(epochs):  # loop over the dataset multiple times
 
+        i = 0
         running_loss = 0.0
         epoch_loss = 0.0
         curr_running_loss = 0.0
@@ -241,6 +243,36 @@ def train_loop(
     return net
 
 
+def get_dataloaders(train_csv_file, batch_size, data_path, device, num_workers=5):
+    df = pd.read_csv(train_csv_file)
+
+    train_set, validate_set, test_set = np.split(
+        df.sample(frac=1, random_state=42), [int(0.8 * len(df)), int(0.9 * len(df))]
+    )
+
+    traindata = tensorLoader(
+        pd.concat([train_set, test_set]), data_path, shuffle_channels=True
+    )
+    testdata = tensorLoader(test_set, data_path)
+    valdata = tensorLoader(validate_set, data_path)
+
+    trainloader = torch.utils.data.DataLoader(
+        traindata, batch_size=batch_size, shuffle=True, num_workers=num_workers
+    )
+    testloader = torch.utils.data.DataLoader(
+        testdata, batch_size=batch_size, shuffle=True, num_workers=num_workers
+    )
+    valloader = torch.utils.data.DataLoader(
+        valdata, batch_size=batch_size, shuffle=True, num_workers=num_workers
+    )
+
+    trainloader = DeviceDataLoader(trainloader, device=device)
+    testloader = DeviceDataLoader(testloader, device=device)
+    valloader = DeviceDataLoader(valloader, device=device)
+
+    return trainloader, testloader, valloader
+
+
 def train(
     net,
     train_file="train.csv",
@@ -266,31 +298,9 @@ def train(
     optimizer = optim.Adam(net.parameters(), lr=lr)
 
     # Dataset Loader Settings
-    df = pd.read_csv(train_file)
-    df_copy = df.copy()
-    train_set, validate_set, test_set = np.split(
-        df.sample(frac=1, random_state=42), [int(0.8 * len(df)), int(0.9 * len(df))]
+    trainloader, testloader, valloader = get_dataloaders(
+        train_file, batch_size, data_path, device
     )
-
-    traindata = tensorLoader(
-        pd.concat([train_set, test_set]), data_path, shuffle_channels=True
-    )
-    trainloader = torch.utils.data.DataLoader(
-        traindata, batch_size=batch_size, shuffle=True, num_workers=5
-    )
-    trainloader = DeviceDataLoader(trainloader, device=device)
-
-    testdata = tensorLoader(test_set, data_path)
-    testloader = torch.utils.data.DataLoader(
-        testdata, batch_size=batch_size, shuffle=True, num_workers=5
-    )
-    testloader = DeviceDataLoader(testloader, device=device)
-
-    valdata = tensorLoader(validate_set, data_path)
-    valloader = torch.utils.data.DataLoader(
-        valdata, batch_size=batch_size, shuffle=True, num_workers=5
-    )
-    valloader = DeviceDataLoader(valloader, device=device)
 
     net = train_loop(
         net=net,
@@ -309,5 +319,5 @@ def train(
 
 
 if __name__ == "__main__":
-
-    train()
+    pass
+    # train()
