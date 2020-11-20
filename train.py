@@ -282,7 +282,7 @@ def train_loop(
         torch.save(net.state_dict(), checkpoint_path)
 
     minutes_taken = (time.time() - start_time) / 60
-    print(f"Finished Training, took {minutes_taken:.3f} minutes to run")
+    print(f">>> Finished Training, took {minutes_taken:.3f} minutes to run <<<\n")
     return net
 
 
