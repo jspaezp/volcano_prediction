@@ -147,8 +147,6 @@ def polyfit(x, y, degree):
 
 
 def evaluate(net, testloader, outfile="file.png", prefix="Train", verbose=True):
-    plt.ioff()
-
     expected = []
     predicted = []
     with torch.no_grad():
@@ -175,6 +173,7 @@ def evaluate(net, testloader, outfile="file.png", prefix="Train", verbose=True):
 
     metrics = {"mae": mae, "r2": r2, "mse": mse}
 
+    plt.ioff()
     myfig = plt.figure()
     axes = myfig.add_axes([0.1, 0.1, 1, 1])
     axes.scatter(x_vals, y_vals, alpha=0.5)
