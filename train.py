@@ -89,12 +89,15 @@ class tensorLoader(Dataset):
         item = self.db[index]
         file_path = str(item["path"])
 
-        if self.cache and file_path not in tensorLoader.cache:
-            # Tensors are of shape
-            # (1, 10, x, x), being 10 channels
-            tensorLoader.cache.update({file_path: torch.load(file_path)[0, :, :, :]})
 
-        data_tensor = tensorLoader.cache[file_path]
+        if self.cache:
+            if file_path not in tensorLoader.cache:
+                # Tensors are of shape
+                # (1, 10, x, x), being 10 channels
+                tensorLoader.cache[file_path] = torch.load(file_path)[0, :, :, :]
+            data_tensor = tensorLoader.cache[file_path]
+        else:
+            data_tensor = torch.load(file_path)[0, :, :, :]
 
         if self.shuffle_channels:
             if random.uniform(0,1) < self.shuffle_channels:
@@ -307,7 +310,7 @@ def get_dataloaders(train_csv_file, batch_size, data_path, device, num_workers=5
     )
 
     traindata = tensorLoader(
-        pd.concat([train_set, test_set]), data_path, shuffle_channels=0.2, cache=cache
+        pd.concat([train_set, test_set]), data_path, shuffle_channels=0.2, cache=False
     )
     testdata = tensorLoader(test_set, data_path, cache=cache)
     valdata = tensorLoader(validate_set, data_path, cache=cache)
