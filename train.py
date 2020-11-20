@@ -89,7 +89,7 @@ class tensorLoader(Dataset):
         data_tensor = torch.load(file_path)[0, :, :, :]
 
         if self.shuffle_channels:
-            if random.uniform(0,1) < self.shuffle_channels:
+            if random.uniform(0, 1) < self.shuffle_channels:
                 data_tensor = shuffle_channels(data_tensor, 0)
 
         return data_tensor, item["value"]
@@ -227,7 +227,7 @@ def train_loop(
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            flat_out = outputs.cpu().detach().numpy().flatten()[0]
+            flat_out = outputs.data[0]
 
             # print statistics
             running_loss += loss.item()
@@ -300,13 +300,25 @@ def get_dataloaders(train_csv_file, batch_size, data_path, device, num_workers=5
     valdata = tensorLoader(validate_set, data_path)
 
     trainloader = torch.utils.data.DataLoader(
-        traindata, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        traindata,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memmory=True,
     )
     testloader = torch.utils.data.DataLoader(
-        testdata, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        testdata,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memmory=True,
     )
     valloader = torch.utils.data.DataLoader(
-        valdata, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        valdata,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memmory=True,
     )
 
     trainloader = DeviceDataLoader(trainloader, device=device)
