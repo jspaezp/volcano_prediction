@@ -186,7 +186,7 @@ def evaluate(net, testloader, outfile="file.png", prefix="Train", verbose=True):
     myfig.savefig(outfile)
     plt.close(myfig)
 
-    print(f"\n>>{prefix} Evaluation Results: Rsq: {r2:.4f}, MAE: {mae:.5f}\n")
+    print(f">>{prefix} Evaluation Results: Rsq: {r2:.4f}, MAE: {mae:.5f}")
     return expected, predicted, metrics
 
 
@@ -203,7 +203,7 @@ def train_loop(
     out_dir=".",
     niter=2000,
 ):
-    print(f"\n\n>>>> Prefix: {prefix} <<<<\n\n")
+    print(f"\n>>>> Prefix: {prefix} <<<<\n")
     start_time = time.time()
     # Train Loop
     for epoch in range(epochs):  # loop over the dataset multiple times
