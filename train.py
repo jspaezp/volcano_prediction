@@ -277,7 +277,7 @@ def train_loop(
         # Save Model
         checkpoint_path = Path(out_dir)
         checkpoint_path = (
-            checkpoint_path / f"L_{val_metrics["mse"] / (i + 1):.4f}_{prefix}_e_{epoch}.pt"
+            checkpoint_path / f"L_{val_metrics['mse'] / (i + 1):.4f}_{prefix}_e_{epoch}.pt"
         )
         torch.save(net.state_dict(), checkpoint_path)
 
