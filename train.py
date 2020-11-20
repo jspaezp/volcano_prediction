@@ -248,6 +248,8 @@ def train_loop(
                 break
 
         prog_bar.close()
+        epoch_end_time = time.time()
+        walltime_epoch_end = epoch_end_time - start_time
 
         print("Evaluating")
 
@@ -259,9 +261,9 @@ def train_loop(
             prefix=f"{prefix}_test",
             verbose=False,
         )
-        writer.add_scalar(f"Test_R2/{prefix}", test_metrics["r2"], epoch)
-        writer.add_scalar(f"Test_MAE/{prefix}", test_metrics["mae"], epoch)
-        writer.add_scalar(f"Test_MSE/{prefix}", test_metrics["mse"], epoch)
+        writer.add_scalar("R2/Test", test_metrics["r2"], epoch, walltime = walltime_epoch_end)
+        writer.add_scalar("MAE/Test", test_metrics["mae"], epoch, walltime = walltime_epoch_end)
+        writer.add_scalar("MSE/Test", test_metrics["mse"], epoch, walltime = walltime_epoch_end)
 
         expected, predicted, val_metrics = evaluate(
             net,
@@ -270,9 +272,9 @@ def train_loop(
             prefix=f"{prefix}_val",
             verbose=False,
         )
-        writer.add_scalar(f"Val_R2/{prefix}", val_metrics["r2"], epoch)
-        writer.add_scalar(f"Val_MAE/{prefix}", val_metrics["mae"], epoch)
-        writer.add_scalar(f"Val_MSE/{prefix}", val_metrics["mse"], epoch)
+        writer.add_scalar("R2/Val", val_metrics["r2"], epoch, walltime = walltime_epoch_end)
+        writer.add_scalar("MAE/Val", val_metrics["mae"], epoch, walltime = walltime_epoch_end)
+        writer.add_scalar("MSE/Val", val_metrics["mse"], epoch, walltime = walltime_epoch_end)
 
         # Save Model
         checkpoint_path = Path(out_dir)
