@@ -19,7 +19,7 @@ class densenet_10r(models.densenet.DenseNet):
         super(densenet_10r, self).__init__(
             num_init_features=num_init_features, num_classes=1, *args, **kwargs
         )
-        self.conv0 = nn.Conv2d(
+        self.features.conv0 = nn.Conv2d(
             10,
             num_init_features,
             kernel_size=(7, 7),
@@ -33,6 +33,16 @@ class densenet_10r(models.densenet.DenseNet):
         x = super(densenet_10r, self).forward(x)
         x = self.rel(x)
         return x
+
+
+def test_densenet_10r():
+    # Tests that a 10c input works on the network
+    x_image = torch.randn(1, 10, 224, 224)
+    for _ in range(20):
+        model = densenet_10r()
+        ouput = model(x_image)
+        print(ouput)
+    # print(model.parameters)
 
 
 class resnet_10c(models.resnet.ResNet):
@@ -59,6 +69,15 @@ class resnet_10r(resnet_10c):
         x = self.rel(x)
         return x
 
+
+def test_resnet_10r():
+    # Tests that a 10c input works on the network
+    x_image = torch.randn(1, 10, 224, 224)
+    for _ in range(20):
+        model = resnet_10r()
+        ouput = model(x_image)
+        print(ouput)
+    # print(model.parameters)
 
 #
 class MyModel(nn.Module):
@@ -97,3 +116,5 @@ if __name__ == "__main__":
         ouput = model(x_image)
         print(ouput)
     # print(model.parameters)
+
+    print(">>>>>>> Out for resnet 10r")

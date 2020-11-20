@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 import random
 
 
-def shuffle_channels(a, axis = 2):
+def shuffle_channels(a, axis=2):
     ret_a = list(torch.split(a, 1, axis))
     # print([x.shape for x in ret_a])
     random.shuffle(ret_a)
@@ -21,18 +21,25 @@ def shuffle_channels(a, axis = 2):
     # print(ret_a.shape)
     return ret_a
 
+
 def test_shuffle_channels():
-    samp_arr = torch.stack([torch.ones((10,10)), torch.zeros(10,10)])
+    samp_arr = torch.stack([torch.ones((10, 10)), torch.zeros(10, 10)])
     orig_shape = samp_arr.shape
     for i in [0, 1, 2]:
         assert orig_shape == shuffle_channels(samp_arr, i).shape
 
-    arr_1 = torch.ones((4,4))
-    arr_2 = torch.arange(16).reshape((4,4))
-    samp_arr = torch.stack([arr_1, arr_2])
-    shuffle_channels(samp_arr, 0)
+    # torch.Size([4, 10, 10])
+    img_like_array = torch.stack([x * torch.ones((10, 10)) for x in range(4)])
+    shuffled_img_like = shuffle_channels(img_like_array, 0)
+    for i in range(4):
+        assert torch.std(shuffled_img_like[i,:,:]) == 0
+        
+    img_like_array = torch.stack([x * torch.arange(100).reshape((10,10)) for x in range(4)])
+    shuffled_img_like = shuffle_channels(img_like_array, 0)
+    # shuffled_img_like
+    # img_like_array
 
-    
+
 # TODO this name is misleading because it is not really a loader
 class tensorLoader(Dataset):
     def __init__(self, train_df, filepath, shuffle_channels=False):
@@ -56,13 +63,13 @@ class tensorLoader(Dataset):
         self.db = db
         self.db_map = db_map
 
-        print("Validating Paths\n")
+        print("Validating Paths")
         counter = 0
         for f in self.db:
             # print(f)
             assert f["path"].is_file
             counter += 1
-        print(f"Validation Done for {counter} Files\n")
+        print(f"Validation Done for {counter} Files")
 
     def __len__(self):
         return len(self.db)
@@ -72,6 +79,7 @@ class tensorLoader(Dataset):
         # Tensors are of shape
         # (1, 10, x, x), being 10 channels
         data_tensor = torch.load(item["path"])[0, :, :, :]
+        
         if self.shuffle_channels == True:
             data_tensor = shuffle_channels(data_tensor, 0)
 
@@ -135,10 +143,9 @@ def polyfit(x, y, degree):
     return results
 
 
-def evaluate(net, testloader, outfile="file.png", prefix="Train", epoch=0, writer=None):
+def evaluate(net, testloader, outfile="file.png", prefix="Train"):
     plt.ioff()
 
-    print("Started Evaluation")
     expected = []
     predicted = []
     with torch.no_grad():
@@ -158,9 +165,6 @@ def evaluate(net, testloader, outfile="file.png", prefix="Train", epoch=0, write
 
     metrics = {"mae": mae, "r2": r2}
 
-    if writer is not None:
-        writer.add_scalar(f"R2/{prefix}", r2, epoch)
-        writer.add_scalar(f"MAE/{prefix}", mae, epoch)
 
     myfig = plt.figure()
     axes = myfig.add_axes([0.1, 0.1, 1, 1])
@@ -184,13 +188,14 @@ def train_loop(
     out_dir=".",
     niter=2000,
 ):
+    print("\n\n>>>> Prefix: {prefix} <<<<\n\n")
     # Train Loop
     for epoch in range(epochs):  # loop over the dataset multiple times
+        print("\n>> Epoch: {epoch} <<\n")
 
         i = 0
         running_loss = 0.0
         epoch_loss = 0.0
-        curr_running_loss = 0.0
         prog_bar = tqdm(trainloader)
 
         for i, data in enumerate(prog_bar, 0):
@@ -218,21 +223,17 @@ def train_loop(
                 {
                     "e": epoch,
                     "epoch_loss": curr_epoch_loss,
-                    "running_loss": curr_running_loss,
                     "last_out": flat_out,
                 }
             )
-
-            if i % 100 == 99:  # print every 200 mini-batches
-                curr_running_loss = running_loss / 100
-                # print("[%d, %5d] loss: %.3f" % (epoch + 1, i + 1, curr_running_loss))
-                running_loss = 0.0
 
             if i >= niter:
                 prog_bar.close()
                 break
 
         prog_bar.close()
+
+        print("Evaluating")
 
         # Model evaluations
         expected, predicted, test_metrics = evaluate(
@@ -243,6 +244,9 @@ def train_loop(
             epoch=epoch,
             writer=writer,
         )
+        writer.add_scalar(f"Test_R2/{prefix}", test_metrics['r2'], epoch)
+        writer.add_scalar(f"Test_MAE/{prefix}", test_metrics['mae'], epoch)
+
         expected, predicted, val_metrics = evaluate(
             net,
             valloader,
@@ -251,11 +255,14 @@ def train_loop(
             epoch=epoch,
             writer=writer,
         )
+        writer.add_scalar(f"Val_R2/{prefix}", val_metrics['r2'], epoch)
+        writer.add_scalar(f"Val_MAE/{prefix}", val_metrics['mae'], epoch)
+
 
         # Save Model
         checkpoint_path = Path(out_dir)
         checkpoint_path = (
-            checkpoint_path / f"{prefix}_l_{epoch_loss / (i + 1):.4f}_e_{epoch}.pt"
+            checkpoint_path / f"L_{epoch_loss / (i + 1):.4f}_{prefix}_e_{epoch}.pt"
         )
         torch.save(net.state_dict(), checkpoint_path)
 
@@ -295,6 +302,7 @@ def get_dataloaders(train_csv_file, batch_size, data_path, device, num_workers=5
 
 def train(
     net,
+    prefix="network",
     train_file="train.csv",
     data_path=Path("./train-tensors"),
     epochs=2,
@@ -303,12 +311,11 @@ def train(
     device=get_default_device(),
     batch_size=16,
     checkpoint_dir=".",
-    prefix="resnet16",
 ):
     print(f"Device that will be used is {device}")
 
     # Tensorboard settings
-    writer = SummaryWriter()
+    writer = SummaryWriter(comment=prefix)
 
     # Network settings
     to_device(net, device)
