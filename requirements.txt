@@ -1,0 +1,9 @@
+
+google-cloud-storage
+tqdm
+PyWavelets
+numpy
+pandas
+
+# torch
+# torchvision
