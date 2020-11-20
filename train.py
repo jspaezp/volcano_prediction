@@ -240,8 +240,7 @@ def train_loop(
             net,
             testloader,
             f"{prefix}_epoch_{epoch}.png",
-            prefix=f"{prefix}_test",
-            writer=writer,
+            prefix=f"{prefix}_test"
         )
         writer.add_scalar(f"Test_R2/{prefix}", test_metrics['r2'], epoch)
         writer.add_scalar(f"Test_MAE/{prefix}", test_metrics['mae'], epoch)
@@ -251,8 +250,6 @@ def train_loop(
             valloader,
             f"{prefix}_val_epoch_{epoch}.png",
             prefix=f"{prefix}_val",
-            epoch=epoch,
-            writer=writer,
         )
         writer.add_scalar(f"Val_R2/{prefix}", val_metrics['r2'], epoch)
         writer.add_scalar(f"Val_MAE/{prefix}", val_metrics['mae'], epoch)
