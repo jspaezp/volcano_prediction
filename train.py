@@ -304,21 +304,21 @@ def get_dataloaders(train_csv_file, batch_size, data_path, device, num_workers=5
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memmory=True,
+        pin_memory=True,
     )
     testloader = torch.utils.data.DataLoader(
         testdata,
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memmory=True,
+        pin_memory=True,
     )
     valloader = torch.utils.data.DataLoader(
         valdata,
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memmory=True,
+        pin_memory=True,
     )
 
     trainloader = DeviceDataLoader(trainloader, device=device)
