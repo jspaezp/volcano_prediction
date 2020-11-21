@@ -41,7 +41,7 @@ class tensorLoader(Dataset):
         counter = 0
         for f in self.db:
             # print(f)
-            assert f["path"].is_file
+            assert f["path"].is_file()
             counter += 1
         print(f"Validation Done for {counter} Files")
 
