@@ -196,6 +196,7 @@ def train(
 
     # Tensorboard settings
     writer = SummaryWriter(comment=prefix)
+    writer.add_graph(net, verbose=True)
 
     # Network settings
     to_device(net, device)
