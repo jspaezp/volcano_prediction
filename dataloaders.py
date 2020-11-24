@@ -15,7 +15,7 @@ from utilities import get_default_device, shuffle_channels, to_device
 class tensorLoader(Dataset):
     def __init__(self, train_df, filepath, shuffle_channels=False, device="cpu"):
         self.shuffle_channels = shuffle_channels
-        self.device = device
+        self.device = torch.device(device)
 
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
         db_map = {}
@@ -24,9 +24,6 @@ class tensorLoader(Dataset):
         for i, (x, y) in enumerate(my_iter):
             db_map.update({x: i})
             x = str(x)
-            # TODO: check if dividing by the mean order of magnitude would be
-            # better than log scaling the out...
-            # y = [math.log10(float(y))]
 
             y = [float(y) / 1e8]
 
@@ -91,10 +88,10 @@ def get_dataloaders(
     )
 
     traindata = tensorLoader(
-        pd.concat([train_set, test_set]), data_path, shuffle_channels=0.2
+        pd.concat([train_set, test_set]), data_path, shuffle_channels=0.2, device=device
     )
-    testdata = tensorLoader(test_set, data_path)
-    valdata = tensorLoader(validate_set, data_path)
+    testdata = tensorLoader(test_set, data_path, device=device)
+    valdata = tensorLoader(validate_set, data_path, device=device)
 
     trainloader = torch.utils.data.DataLoader(
         traindata,
@@ -117,6 +114,8 @@ def get_dataloaders(
         num_workers=num_workers,
         pin_memory=True,
     )
+
+    # TODO check if the device data loader is required
 
     trainloader = DeviceDataLoader(trainloader, device=device)
     testloader = DeviceDataLoader(testloader, device=device)
