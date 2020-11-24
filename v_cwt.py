@@ -17,7 +17,6 @@ def pd_to_cwt_list(data_sensors: pd.DataFrame):
     trans = []
 
     for col in list(data_sensors):
-        print(col)
         data_section = np.nan_to_num(data_sensors[col].to_numpy().astype("float32"))
         coef, freqs = pywt.cwt(data=data_section / 2.**16, scales=sequence, wavelet="morl")
 
@@ -31,12 +30,21 @@ def file_to_cwt_list(filename):
     return pd_to_cwt_list(data_sensors)
 
 
-def file_to_cwt_array(filename, reshape_size=(256, 256)):
+def file_to_cwt_array(filename, reshape_size=(256, 256), verbose=True):
     cwt_list = file_to_cwt_list(filename)
     arrays = [
-        cv2.resize(x, reshape_size=reshape_size).astype(np.float32) for x in cwt_list
+        cv2.resize(x, dsize=reshape_size).astype(np.float32) for x in cwt_list
     ]
     ret = np.stack(arrays, axis=-1)
-    print(ret.shape)
+    if verbose:
+        print(ret.shape)
 
     return ret
+
+if __name__ == "__main__":
+    import time
+
+    st = time.time()
+    for _ in range(10):
+        file_to_cwt_array("sample_data/1007233480.csv", (512, 512))
+    print(f"Takes in average {(time.time() - st)/10} seconds per image")
