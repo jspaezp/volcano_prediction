@@ -129,13 +129,14 @@ def train_loop(
         print("Evaluating")
 
         # Model evaluations
-        _, _, test_metrics = evaluate(
+        expected, predicted, test_metrics = evaluate(
             net,
             testloader,
             f"{prefix}_epoch_{epoch}.png",
             prefix=f"{prefix}_test",
             verbose=False,
         )
+        writer.add_figure("scatterplot/test", plt(expected, predicted))
         writer.add_scalar(
             "R2/Test", test_metrics["r2"], epoch, walltime=walltime_epoch_end
         )
@@ -166,7 +167,7 @@ def train_loop(
         # Save Model
         checkpoint_path = Path(out_dir)
         checkpoint_path = (
-            checkpoint_path / f"L_{val_metrics['mse']:.4f}_{prefix}_e_{epoch}.pt"
+            checkpoint_path / f"L_{val_metrics['mse']:.6f}_{prefix}_e_{epoch}.pt"
         )
         torch.save(net.state_dict(), checkpoint_path)
 
