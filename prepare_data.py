@@ -48,7 +48,7 @@ def cwt_dir(in_dir, out_dir):
             print(f"skipping file {str(out_file)} because it already exists!!")
             continue
 
-        a = file_to_cwt_array(f, reshape_size=(224, 224))
+        a = file_to_cwt_array(f, reshape_size=(512, 512))
         npy_arr2 = np.stack([np.rollaxis(a, 2, 0)])
         tensor = torch.from_numpy(npy_arr2)
         torch.save(tensor, out_file)
