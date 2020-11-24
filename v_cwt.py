@@ -4,8 +4,6 @@ import numpy as np
 import pywt
 import cv2
 
-import matplotlib.pyplot as plt
-
 
 def pd_to_cwt_list(data_sensors: pd.DataFrame):
     # Each sensor seems to be 16 bit, vals from -32k to +32k
@@ -33,20 +31,6 @@ def file_to_cwt_list(filename):
     return pd_to_cwt_list(data_sensors)
 
 
-def norm_arr(x, reshape_size=(256, 256)):
-    resized = cv2.resize(x, reshape_size)
-
-    # I am adding 0.01 to prevent division by 0 issues
-    abs_max = resized / (np.std(resized) + 0.01)
-
-    # This would make the limit from 0 to 1
-    # And censoring the upper limit at 4 standard deviations
-    abs_max = abs_max / 4
-    abs_max[abs_max > 1] = 1
-
-    return abs_max
-
-
 def file_to_cwt_array(filename, reshape_size=(256, 256)):
     cwt_list = file_to_cwt_list(filename)
     arrays = [
@@ -56,24 +40,3 @@ def file_to_cwt_array(filename, reshape_size=(256, 256)):
     print(ret.shape)
 
     return ret
-
-
-def visualize_cwt_list(cwt_list):
-    full = cv2.vconcat(cwt_list)
-    viz_full_max = np.max(np.abs(np.nan_to_num(full))) ** (1 / 3)
-    viz_full = 128 + 127 * np.nan_to_num(full) / viz_full_max
-    viz_full = viz_full.astype(np.uint8)
-    im_color = cv2.applyColorMap(viz_full, cv2.COLORMAP_BONE)
-    return im_color
-
-
-def foo():
-    arr_l = file_to_cwt_array("./sample_data/1000015382.csv")
-    viz = visualize_cwt_list(arr_l)
-
-    cv2.imwrite("img.png", viz)
-
-    import matplotlib.pyplot as plt
-
-    _ = plt.hist(viz_full, bins="auto")
-    plt.show()
