@@ -136,7 +136,7 @@ def train_loop(
             prefix=f"{prefix}_test",
             verbose=False,
         )
-        writer.add_figure("scatterplot/test", plt.plot(expected, predicted))
+        # writer.add_figure("scatterplot/test", plt.plot(expected, predicted))
         writer.add_scalar(
             "R2/Test", test_metrics["r2"], epoch, walltime=walltime_epoch_end
         )
