@@ -8,21 +8,22 @@ import matplotlib.pyplot as plt
 
 
 def pd_to_cwt_list(data_sensors: pd.DataFrame):
-    #  Each file contains ten minutes of logs from ten different sensors arrayed around a volcano
-    # So I will make a linear interpolation in seconds (10*60), interval is 0.1s
-    # sequence = np.linspace(0, 10*60, len(data_sensors))
+    # Each sensor seems to be 16 bit, vals from -32k to +32k
 
-    # [0: 1, 1: 2, 2: 4, 3: 8, 4: 16, 5: 32, 6: 64, 7: 128, 8: 256, 9: 512]
-    sequence = np.arange(1, 2 ** 8)
+    #  Each file contains ten minutes of logs from ten different sensors arrayed around a volcano
+    #  So I will make a linear interpolation in seconds (10*60), interval is 0.1s
+
+    # with this wavelet (morl) a sequence from 2 to 128 covers frequencies from 40 to 0.6hz
+    sequence = np.linspace(2, 128, 50)
 
     trans = []
 
     for col in list(data_sensors):
         print(col)
         data_section = np.nan_to_num(data_sensors[col].to_numpy().astype("float32"))
-        coef, freqs = pywt.cwt(data=data_section, scales=sequence, wavelet="morl")
+        coef, freqs = pywt.cwt(data=data_section / 2.**16, scales=sequence, wavelet="morl")
 
-        trans.append(coef)
+        trans.append(np.abs(coef))
 
     return trans
 
@@ -34,10 +35,9 @@ def file_to_cwt_list(filename):
 
 def norm_arr(x, reshape_size=(256, 256)):
     resized = cv2.resize(x, reshape_size)
-    abs_arr = np.abs(np.nan_to_num(resized))
 
     # I am adding 0.01 to prevent division by 0 issues
-    abs_max = abs_arr / (np.std(abs_arr) + 0.01)
+    abs_max = resized / (np.std(resized) + 0.01)
 
     # This would make the limit from 0 to 1
     # And censoring the upper limit at 4 standard deviations
@@ -50,7 +50,7 @@ def norm_arr(x, reshape_size=(256, 256)):
 def file_to_cwt_array(filename, reshape_size=(256, 256)):
     cwt_list = file_to_cwt_list(filename)
     arrays = [
-        norm_arr(x, reshape_size=reshape_size).astype(np.float32) for x in cwt_list
+        cv2.resize(x, reshape_size=reshape_size).astype(np.float32) for x in cwt_list
     ]
     ret = np.stack(arrays, axis=-1)
     print(ret.shape)
