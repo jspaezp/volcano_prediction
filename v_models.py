@@ -5,6 +5,15 @@ import torch.nn.functional as nnf
 import torchvision.models as models
 
 
+def get_total_parameters(model):
+    pytorch_total_params = sum(p.numel() for p in model.parameters())
+    pytorch_trainable_params = sum(
+        p.numel() for p in model.parameters() if p.requires_grad
+    )
+
+    return pytorch_total_params, pytorch_trainable_params
+
+
 class densenet_10r(models.densenet.DenseNet):
     """
     densenet_10r Modified version of DenseNet
@@ -41,8 +50,12 @@ def test_densenet_10r():
     for _ in range(20):
         model = densenet_10r()
         ouput = model(x_image)
-        print(ouput)
-    # print(model.parameters)
+    densenet169 = densenet_10r(
+        **{"growth_rate": 32, "block_config": (6, 12, 32, 32), "num_init_features": 64}
+    )
+    print(">>>>> densenet169")
+    print(densenet169)
+    print(get_total_parameters(densenet169))
 
 
 class resnet_10c(models.resnet.ResNet):
@@ -76,21 +89,24 @@ def test_resnet_10r():
     for _ in range(20):
         model = resnet_10r()
         output = model(x_image)
-        print(output)
 
     model = resnet_10r()
     output = model(x_image)
     assert len(output) == 1
+    resnet50 = resnet_10r(**{"layers": [3, 4, 6, 3]})
+    print(">>>>> resnet50")
+    print(resnet50)
+    print(get_total_parameters(resnet50))
 
 
 def test_resnet_10c():
-    resnet_10c(layers = [2,3,4,5])
+    resnet_10c(layers=[2, 3, 4, 5])
     x_image = torch.randn(1, 10, 224, 224)
     model = resnet_10c()
     ouput = model(x_image)
-    print(ouput)
 
 
 if __name__ == "__main__":
-    pass
-
+    test_resnet_10c()
+    test_resnet_10r()
+    test_densenet_10r()

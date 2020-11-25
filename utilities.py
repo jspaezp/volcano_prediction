@@ -1,4 +1,3 @@
-
 import random
 import time
 
@@ -88,5 +87,5 @@ def polyfit(x, y, degree):
 
 
 def test_polyfit():
-    polyfit(np.array([1,2,3,4,5]), np.array([2,4,6,8,10]), 1)
+    polyfit(np.array([1, 2, 3, 4, 5]), np.array([2, 4, 6, 8, 10]), 1)
     # {'polynomial': [1.9999999999999996, 4.690263559940989e-16], 'determination': 0.9999999999999997}

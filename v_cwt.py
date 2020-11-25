@@ -18,7 +18,9 @@ def pd_to_cwt_list(data_sensors: pd.DataFrame):
 
     for col in list(data_sensors):
         data_section = np.nan_to_num(data_sensors[col].to_numpy().astype("float32"))
-        coef, freqs = pywt.cwt(data=data_section / 2.**16, scales=sequence, wavelet="morl")
+        coef, freqs = pywt.cwt(
+            data=data_section / 2.0 ** 16, scales=sequence, wavelet="morl"
+        )
 
         trans.append(np.abs(coef))
 
@@ -32,14 +34,13 @@ def file_to_cwt_list(filename):
 
 def file_to_cwt_array(filename, reshape_size=(256, 256), verbose=True):
     cwt_list = file_to_cwt_list(filename)
-    arrays = [
-        cv2.resize(x, dsize=reshape_size).astype(np.float32) for x in cwt_list
-    ]
+    arrays = [cv2.resize(x, dsize=reshape_size).astype(np.float32) for x in cwt_list]
     ret = np.stack(arrays, axis=-1)
     if verbose:
         print(ret.shape)
 
     return ret
+
 
 if __name__ == "__main__":
     import time

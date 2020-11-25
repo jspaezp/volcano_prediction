@@ -115,7 +115,11 @@ def train_loop(
             curr_epoch_loss = epoch_loss / (i + 1)
 
             prog_bar.set_postfix(
-                {"e": epoch, "epoch_loss": curr_epoch_loss, "last_out": flat_out,}
+                {
+                    "e": epoch,
+                    "epoch_loss": curr_epoch_loss,
+                    "last_out": flat_out,
+                }
             )
 
             if i >= niter:
