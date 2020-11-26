@@ -64,7 +64,7 @@ class Lit10cDensenet169(LitModel):
         densenet = densenet_10r(
             growth_rate=32, block_config=(6, 12, 32, 32), num_init_features=64
         )
-        super(Lit10cResnet50, self).__init__(
+        super(Lit10cDensenet169, self).__init__(
             densenet, optimizer=optimizer, learning_rate=learning_rate, loss=loss
         )
 
