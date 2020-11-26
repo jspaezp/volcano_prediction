@@ -12,3 +12,5 @@ def train():
 
     data = VolcanoDataLoader(train_df, data_dir, augmenter=scripted_transforms)
     trainer.tune(model, data)
+
+    

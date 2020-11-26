@@ -46,6 +46,7 @@ def test_TensorDispatcher():
 # TODO this name is misleading because it is not really a loader
 class GreedyTensorLoader(TensorDispatcher):
     def __init__(self, train_df, data_dir, maxmem=5e9, augmenter=None):
+        print("Setting up greedy tensor loader")
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
         spectra = []
         responses = []
@@ -63,6 +64,9 @@ class GreedyTensorLoader(TensorDispatcher):
             if mem > maxmem:
                 print(f"Maximum memmory reached, read {i} tensors")
                 break
+
+            if i % 100 == 0:
+                print(f"Read {i} files so far...")
 
         print(f"Loaded dataset uses aprox {mem} bytes, {mem/1000000} MB")
 
