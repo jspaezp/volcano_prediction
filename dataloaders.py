@@ -8,6 +8,19 @@ from torch.utils.data import Dataset
 from utilities import get_default_device, to_device
 
 
+class AugmentedDataset(Dataset):
+    def __init__(self, dataset, augmenter):
+        self.augmenter = augmenter
+        self.dataset = dataset
+
+    def __getitem__(self, index):
+        x, y = self.dataset.__getitem__(index)
+        return self.augmenter(x), y
+
+    def __len__(self):
+        return len(self.dataset)
+
+
 class TensorDispatcher(Dataset):
     def __init__(self, data_tensor, response_tensor, augmenter=None):
         self.augmenter = augmenter

@@ -3,7 +3,7 @@ import torch
 import pytorch_lightning as pl
 
 from torch.utils.data import DataLoader, random_split
-from dataloaders import GreedyTensorLoader
+from dataloaders import GreedyTensorLoader, TensorDispatcher, AugmentedDataset
 from v_models import resnet_10r, densenet_10r
 
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -69,6 +69,69 @@ class Lit10cDensenet169(LitModel):
         )
 
 
+class TensorDataLoader(pl.LightningDataModule):
+    def __init__(self, x_tensor, y_tensor, batch_size, train_split, augmenter):
+        super(TensorDataLoader, self).__init__()
+        self.batch_size = batch_size
+        self.train_split = train_split
+        self.x_tensor = x_tensor
+        self.y_tensor = y_tensor
+        self.augmenter = augmenter
+
+    def setup(self, stage=None):
+        data_full = TensorDispatcher(self.x_tensor, self.y_tensor)
+        db_size = len(data_full)
+        train_size = int(db_size * self.train_split)
+        val_size = db_size - train_size
+        train, self.val = random_split(
+            data_full, [train_size, val_size]
+        )
+        self.train = AugmentedDataset(train, self.augmenter)
+
+    def train_dataloader(self):
+        return DataLoader(self.train, batch_size=self.batch_size, shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.val, batch_size=self.batch_size, shuffle=False)
+
+
+def test_TensorDataLoader():
+    # Test that it works
+    x_tensor = torch.stack([x * torch.ones((3,3)) for x in range(50)])
+    y_tensor = torch.stack([x * torch.ones((1)) for x in range(50)])
+
+    def samp_augmenter(image):
+        return image*torch.rand(1)
+
+    tdl = TensorDataLoader(x_tensor=x_tensor, y_tensor=y_tensor, augmenter=samp_augmenter, batch_size=2, train_split=0.5)
+    tdl.setup()
+
+    tr_dl = tdl.train_dataloader()
+    val_dl = tdl.val_dataloader()
+
+    x, x2, y, y2 = (1,2,3,4)
+
+    for x in tr_dl:
+        continue
+
+    for x2 in tr_dl:
+        continue
+
+    for y in val_dl:
+        continue
+
+    for y2 in val_dl:
+        continue
+
+    # Test that it actually augments where it is supposed to
+    assert not torch.all(x[0] == x2[0])
+    # Test that it actually does not when it is not supposed to
+    assert torch.all(y[0] == y2[0])
+
+    # TODO write test to check that shuffling happends when it is supposed to
+    # print(x2[1])
+    # print(x[1])
+
 # TODO decouple the reading with the dataset,
 class VolcanoDataLoader(pl.LightningDataModule):
     def __init__(self, train_df, data_dir, batch_size, train_split=0.9, augmenter=None):
@@ -84,19 +147,17 @@ class VolcanoDataLoader(pl.LightningDataModule):
         db_size = len(volcano_data_full)
         train_size = int(db_size * self.train_split)
         val_size = db_size - train_size
-        self.volcano_train, self.volcano_val = random_split(
+        volcano_train, self.volcano_val = random_split(
             volcano_data_full, [train_size, val_size]
         )
-        self.volcano_train.augmenter = self.augmenter
+
+        self.volcano_train = AugmentedDataset(volcano_train, self.augmenter) 
 
     def train_dataloader(self):
         return DataLoader(self.volcano_train, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
         return DataLoader(self.volcano_val, batch_size=self.batch_size)
-
-    def test_dataloader(self):
-        return DataLoader(self.mnist_test, batch_size=self.batch_size)
 
 
 def get_default_trainer(ngpus=0):
@@ -144,3 +205,4 @@ def test_train():
 
 if __name__ == "__main__":
     test_train()
+    test_TensorDataLoader()
