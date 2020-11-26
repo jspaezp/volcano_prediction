@@ -81,7 +81,7 @@ def get_default_trainer(ngpus=0):
         filepath=os.getcwd(),
         save_top_k=4,
         verbose=True,
-        monitor="checkpoint_on",
+        monitor="val_loss",
         mode="min",
         prefix="",
     )
