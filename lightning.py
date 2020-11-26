@@ -89,10 +89,12 @@ def get_default_trainer(ngpus=0):
 
     trainer = pl.Trainer(
         logger=logger,
-        callbacks=[EarlyStopping(monitor="val_loss"), checkpoint_callback],
+        callbacks=[EarlyStopping(monitor="val_loss", verbose=True, patience=10), checkpoint_callback],
         auto_lr_find=True,
         gpus=ngpus,
         precision=16,
+        progress_bar_refresh_rate=25,
+        profiler = "simple",
     )
 
     return trainer
