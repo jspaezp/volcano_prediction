@@ -1,6 +1,3 @@
-
-import random
-
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -8,14 +5,93 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from utilities import get_default_device, shuffle_channels, to_device
+from utilities import get_default_device, to_device
+
+
+class TensorDispatcher(Dataset):
+    def __init__(self, data_tensor, response_tensor, augmenter=None):
+        self.augmenter = augmenter
+        assert data_tensor.shape[0] == response_tensor.shape[0]
+
+        self.data_tensor = data_tensor
+        self.response_tensor = response_tensor
+
+    def __len__(self):
+        return self.data_tensor.shape[0]
+
+    def __getitem__(self, index):
+        x = self.data_tensor[index, ...].detach().clone()
+        y = self.response_tensor[index, ...].detach().clone()
+
+        if self.augmenter is not None:
+            x = self.augmenter(image=x)
+
+        return x.float(), y
+
+
+def test_TensorDispatcher():
+    x = torch.ones((10, 50, 50))
+    y = torch.zeros((10, 1))
+
+    TD = TensorDispatcher(x, y)
+    for i, (x, y) in enumerate(TD):
+        continue
+
+    assert torch.all(x == torch.ones(50, 50))
+    assert torch.all(y == torch.zeros(1))
+    assert i == 9
 
 
 # TODO this name is misleading because it is not really a loader
+class GreedyTensorLoader(TensorDispatcher):
+    def __init__(self, train_df, data_dir, maxmem=5e9, augmenter=None):
+        my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
+        spectra = []
+        responses = []
+
+        mem = 0
+        for i, (x, y) in enumerate(my_iter):
+            filepath = Path(data_dir) / f"{x}.pt"
+            data_tensor = torch.load(str(filepath))[0, :, :, :].half()
+            spectra.append(data_tensor)
+
+            y = [float(y) / 1e8]
+            responses.append(torch.tensor(y))
+            mem += data_tensor.element_size() * data_tensor.nelement()
+
+            if mem > maxmem:
+                print(f"Maximum memmory reached, read {i} tensors")
+                break
+
+        print(f"Loaded dataset uses aprox {mem} bytes, {mem/1000000} MB")
+
+        super(GreedyTensorLoader, self).__init__(
+            data_tensor=torch.stack(spectra),
+            response_tensor=torch.stack(responses),
+            augmenter=augmenter,
+        )
+
+    def __len__(self):
+        return super(GreedyTensorLoader, self).__len__()
+
+    def __getitem__(self, index):
+        return super(GreedyTensorLoader, self).__getitem__(index)
+
+
+def test_GreedyTensorLoader():
+    tiny_df = pd.DataFrame({"segment_id": [1000015382] * 2, "time_to_eruption": [1, 1]})
+    DL = GreedyTensorLoader(train_df=tiny_df, data_dir="sample_data")
+
+    for i, (x, y) in enumerate(DL):
+        print(x.shape)
+        print(y.shape)
+
+    assert i == 1
+
+
 class tensorLoader(Dataset):
-    def __init__(self, train_df, filepath, shuffle_channels=False, device="cpu"):
-        self.shuffle_channels = shuffle_channels
-        self.device = torch.device(device)
+    def __init__(self, train_df, filepath, augmenter=None):
+        self.augmenter = augmenter
 
         my_iter = zip(train_df["segment_id"], train_df["time_to_eruption"])
         db_map = {}
@@ -28,7 +104,7 @@ class tensorLoader(Dataset):
             y = [float(y) / 1e8]
 
             # TODO consider if adding tensors here is too much GPU memory
-            y = torch.tensor(y, device=device)
+            y = torch.tensor(y)
             db.append({"path": (Path(filepath) / f"{x}.pt"), "value": y})
 
         self.db = db
@@ -49,11 +125,10 @@ class tensorLoader(Dataset):
         item = self.db[index]
         file_path = str(item["path"])
 
-        data_tensor = torch.load(file_path, map_location=self.device)[0, :, :, :]
+        data_tensor = torch.load(file_path)[0, :, :, :]
 
-        if self.shuffle_channels:
-            if random.uniform(0, 1) < self.shuffle_channels:
-                data_tensor = shuffle_channels(data_tensor, 0)
+        if self.augmenter is not None:
+            data_tensor = torch.from_numpy(self.augmenter(image=data_tensor))
 
         return data_tensor, item["value"]
 
@@ -77,7 +152,12 @@ class DeviceDataLoader:
 
 
 def get_dataloaders(
-    train_csv_file: str, batch_size: int, data_path: str, device, num_workers: int = 5
+    train_csv_file: str,
+    batch_size: int,
+    data_path: str,
+    device,
+    num_workers: int = 5,
+    augmenter=None,
 ):
     """Generates train test and validation datasets using a csv as a template"""
 
@@ -88,10 +168,10 @@ def get_dataloaders(
     )
 
     traindata = tensorLoader(
-        pd.concat([train_set, test_set]), data_path, shuffle_channels=0.2, device=device
+        pd.concat([train_set, test_set]), data_path, augmenter=augmenter
     )
-    testdata = tensorLoader(test_set, data_path, device=device)
-    valdata = tensorLoader(validate_set, data_path, device=device)
+    testdata = tensorLoader(test_set, data_path)
+    valdata = tensorLoader(validate_set, data_path)
 
     trainloader = torch.utils.data.DataLoader(
         traindata,
@@ -122,3 +202,8 @@ def get_dataloaders(
     valloader = DeviceDataLoader(valloader, device=device)
 
     return trainloader, testloader, valloader
+
+
+if __name__ == "__main__":
+    test_TensorDispatcher()
+    test_GreedyTensorLoader()
