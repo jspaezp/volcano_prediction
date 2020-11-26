@@ -92,6 +92,7 @@ def get_default_trainer(ngpus=0):
         callbacks=[EarlyStopping(monitor="val_loss"), checkpoint_callback],
         auto_lr_find=True,
         gpus=ngpus,
+        precision=16,
     )
 
     return trainer
