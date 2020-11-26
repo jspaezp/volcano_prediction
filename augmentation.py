@@ -79,7 +79,7 @@ def get_default_augmenter():
     my_transforms = transforms.RandomApply(
         torch.nn.ModuleList(
             [
-                RandomHorizontalFlip(0.8),
+                RandomHorizontalFlip(0.5),
                 RandomRollPct(percent=(-0.5, 0.5), axis=2, pct_apply=0.8),
                 RandomMultiplyChannelwise((0.8, 1.2), pct_apply=0.8),
             ]

@@ -4,30 +4,30 @@ import pytorch_lightning as pl
 
 from torch.utils.data import DataLoader, random_split
 from dataloaders import GreedyTensorLoader
-from v_models import resnet_10r
+from v_models import resnet_10r, densenet_10r
 
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 
-class Lit10cResnet50(pl.LightningModule):
+class LitModel(pl.LightningModule):
     def __init__(
-        self, optimizer=torch.optim.Adam, learning_rate=1e-4, loss=torch.nn.MSELoss
+        self, net, optimizer=torch.optim.Adam, learning_rate=1e-4, loss=torch.nn.MSELoss
     ):
-        super(Lit10cResnet50, self).__init__()
-        self.resnet = resnet_10r(layers=[3, 4, 6, 3])
+        super(LitModel, self).__init__()
         self.optimizer = optimizer
         self.lr = learning_rate
         self.loss = loss()
+        self.net = net
 
     def forward(self, x):
-        x = self.resnet.forward(x)
+        x = self.net.forward(x)
         return x
 
     def configure_optimizers(self):
         optimizer = self.optimizer(
-            self.resnet.parameters(), lr=(self.lr or self.learning_rate)
+            self.net.parameters(), lr=(self.lr or self.learning_rate)
         )
         return optimizer
 
@@ -45,6 +45,28 @@ class Lit10cResnet50(pl.LightningModule):
         self.log("val_loss", val_loss)
 
         return val_loss
+
+
+class Lit10cResnet50(LitModel):
+    def __init__(
+        self, optimizer=torch.optim.Adam, learning_rate=1e-4, loss=torch.nn.MSELoss
+    ):
+        resnet = resnet_10r(layers=[3, 4, 6, 3])
+        super(Lit10cResnet50, self).__init__(
+            resnet, optimizer=optimizer, learning_rate=learning_rate, loss=loss
+        )
+
+
+class Lit10cDensenet169(LitModel):
+    def __init__(
+        self, optimizer=torch.optim.Adam, learning_rate=1e-4, loss=torch.nn.MSELoss
+    ):
+        densenet = densenet_10r(
+            growth_rate=32, block_config=(6, 12, 32, 32), num_init_features=64
+        )
+        super(Lit10cResnet50, self).__init__(
+            densenet, optimizer=optimizer, learning_rate=learning_rate, loss=loss
+        )
 
 
 class VolcanoDataLoader(pl.LightningDataModule):
@@ -89,12 +111,15 @@ def get_default_trainer(ngpus=0):
 
     trainer = pl.Trainer(
         logger=logger,
-        callbacks=[EarlyStopping(monitor="val_loss", verbose=True, patience=10), checkpoint_callback],
+        callbacks=[
+            EarlyStopping(monitor="val_loss", verbose=True, patience=10),
+            checkpoint_callback,
+        ],
         auto_lr_find=True,
         gpus=ngpus,
         precision=16,
         progress_bar_refresh_rate=25,
-        profiler = "simple",
+        profiler="simple",
     )
 
     return trainer
