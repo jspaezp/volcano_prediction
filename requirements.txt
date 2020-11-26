@@ -4,6 +4,8 @@ tqdm
 PyWavelets
 numpy
 pandas
+pytorch-lightning
+pytest
 
 # torch
 # torchvision

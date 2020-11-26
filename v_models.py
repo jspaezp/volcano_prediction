@@ -47,7 +47,7 @@ class densenet_10r(models.densenet.DenseNet):
 def test_densenet_10r():
     # Tests that a 10c input works on the network
     x_image = torch.randn(1, 10, 224, 224)
-    for _ in range(20):
+    for _ in range(5):
         model = densenet_10r()
         ouput = model(x_image)
     densenet169 = densenet_10r(
@@ -86,7 +86,7 @@ class resnet_10r(resnet_10c):
 def test_resnet_10r():
     # Tests that a 10c input works on the network
     x_image = torch.randn(1, 10, 224, 224)
-    for _ in range(20):
+    for _ in range(5):
         model = resnet_10r()
         output = model(x_image)
 

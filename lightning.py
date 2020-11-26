@@ -1,3 +1,4 @@
+import os
 import torch
 import pytorch_lightning as pl
 
@@ -5,10 +6,14 @@ from torch.utils.data import DataLoader, random_split
 from dataloaders import GreedyTensorLoader
 from v_models import resnet_10r
 
+from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 
 class Lit10cResnet50(pl.LightningModule):
     def __init__(
-        self, optimizer=torch.optim.Adam, learning_rate=1e-1, loss=torch.nn.MSELoss
+        self, optimizer=torch.optim.Adam, learning_rate=1e-4, loss=torch.nn.MSELoss
     ):
         super(Lit10cResnet50, self).__init__()
         self.resnet = resnet_10r(layers=[3, 4, 6, 3])
@@ -71,8 +76,25 @@ class VolcanoDataLoader(pl.LightningDataModule):
         return DataLoader(self.mnist_test, batch_size=self.batch_size)
 
 
-def test_VolcanoDataLoader():
-    pass
+def get_default_trainer(ngpus=0):
+    checkpoint_callback = ModelCheckpoint(
+        filepath=os.getcwd(),
+        save_top_k=4,
+        verbose=True,
+        monitor="checkpoint_on",
+        mode="min",
+        prefix="",
+    )
+    logger = TensorBoardLogger("tb_logs", name="my_model")
+
+    trainer = pl.Trainer(
+        logger=logger,
+        callbacks=[EarlyStopping(monitor="val_loss"), checkpoint_callback],
+        auto_lr_find=True,
+        gpus=ngpus,
+    )
+
+    return trainer
 
 
 def test_train():

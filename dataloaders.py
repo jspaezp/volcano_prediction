@@ -32,6 +32,7 @@ class TensorDispatcher(Dataset):
 def test_TensorDispatcher():
     x = torch.ones((10, 50, 50))
     y = torch.zeros((10, 1))
+    i = 0
 
     TD = TensorDispatcher(x, y)
     for i, (x, y) in enumerate(TD):
@@ -81,6 +82,7 @@ class GreedyTensorLoader(TensorDispatcher):
 def test_GreedyTensorLoader():
     tiny_df = pd.DataFrame({"segment_id": [1000015382] * 2, "time_to_eruption": [1, 1]})
     DL = GreedyTensorLoader(train_df=tiny_df, data_dir="sample_data")
+    i = 0
 
     for i, (x, y) in enumerate(DL):
         print(x.shape)
