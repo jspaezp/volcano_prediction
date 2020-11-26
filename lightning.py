@@ -69,6 +69,7 @@ class Lit10cDensenet169(LitModel):
         )
 
 
+# TODO decouple the reading with the dataset,
 class VolcanoDataLoader(pl.LightningDataModule):
     def __init__(self, train_df, data_dir, batch_size, train_split=0.9, augmenter=None):
         super().__init__()
@@ -108,11 +109,12 @@ def get_default_trainer(ngpus=0):
         prefix="",
     )
     logger = TensorBoardLogger("tb_logs", name="my_model")
+    stopper = EarlyStopping(monitor="val_loss", verbose=True, patience=50)
 
     trainer = pl.Trainer(
         logger=logger,
         callbacks=[
-            EarlyStopping(monitor="val_loss", verbose=True, patience=10),
+            stopper,
             checkpoint_callback,
         ],
         auto_lr_find=True,
