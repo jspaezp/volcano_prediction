@@ -1,5 +1,7 @@
 import os
+from utilities import summarize_model
 import torch
+from torchvision.models.resnet import BasicBlock, Bottleneck
 import pytorch_lightning as pl
 
 from torch.utils.data import DataLoader, random_split
@@ -47,24 +49,82 @@ class LitModel(pl.LightningModule):
         return val_loss
 
 
-class Lit10cResnet50(LitModel):
+class Lit10CResnet(LitModel):
     def __init__(
-        self, optimizer=torch.optim.Adam, learning_rate=1e-4, loss=torch.nn.MSELoss
+        self,
+        block,
+        layers,
+        optimizer=torch.optim.Adam,
+        learning_rate=1e-4,
+        loss=torch.nn.MSELoss,
+        *args,
+        **kwargs,
     ):
-        resnet = resnet_10r(layers=[3, 4, 6, 3])
-        super(Lit10cResnet50, self).__init__(
+        resnet = resnet_10r(block, layers, *args, **kwargs)
+        super(Lit10CResnet, self).__init__(
             resnet, optimizer=optimizer, learning_rate=learning_rate, loss=loss
         )
 
 
-class Lit10cDensenet169(LitModel):
+def lit10c_Resnet18(*args, **kwargs):
+    return Lit10CResnet(BasicBlock, [2, 2, 2, 2])
+
+
+def lit10c_Resnet34(*args, **kwargs):
+    return Lit10CResnet(BasicBlock, [3, 4, 6, 3])
+
+
+def lit10c_Resnet50(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 4, 6, 3])
+
+
+def lit10c_Resnet101(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 4, 23, 3])
+
+
+def lit10c_Resnet152(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 8, 36, 3])
+
+
+def lit10c_resnext50_32x4d(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 4, 6, 3], groups=32, width_per_group=4)
+
+
+def lit10c_Densenet121(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64
+    )
+
+
+def lit10c_Densenet161(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=48, block_config=(6, 12, 36, 24), num_init_features=96
+    )
+
+
+def lit10c_Densenet169(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=32, block_config=(6, 12, 32, 32), num_init_features=64
+    )
+
+
+def lit10c_Densenet201(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=32, block_config=(6, 12, 48, 32), num_init_features=64
+    )
+
+
+class Lit10CDensenet(LitModel):
     def __init__(
-        self, optimizer=torch.optim.Adam, learning_rate=1e-4, loss=torch.nn.MSELoss
+        self,
+        optimizer=torch.optim.Adam,
+        learning_rate=1e-4,
+        loss=torch.nn.MSELoss,
+        *args,
+        **kwargs,
     ):
-        densenet = densenet_10r(
-            growth_rate=32, block_config=(6, 12, 32, 32), num_init_features=64
-        )
-        super(Lit10cDensenet169, self).__init__(
+        densenet = densenet_10r(*args, **kwargs)
+        super(Lit10CDensenet, self).__init__(
             densenet, optimizer=optimizer, learning_rate=learning_rate, loss=loss
         )
 
@@ -196,7 +256,7 @@ def test_train():
     DL = VolcanoDataLoader(
         train_df=tiny_df, data_dir="sample_data", batch_size=2, train_split=0.5
     )
-    model = Lit10cResnet50()
+    model = lit10c_Resnet18()
     trainer = pl.Trainer(max_epochs=2, profiler="simple")
 
     trainer.fit(model, DL)
@@ -205,3 +265,13 @@ def test_train():
 if __name__ == "__main__":
     test_train()
     test_TensorDataLoader()
+    summarize_model(lit10c_Resnet18())
+    summarize_model(lit10c_Resnet34())
+    summarize_model(lit10c_Resnet50())
+    summarize_model(lit10c_Resnet101())
+    summarize_model(lit10c_Resnet152())
+    summarize_model(lit10c_resnext50_32x4d())
+    summarize_model(lit10c_Densenet121())
+    summarize_model(lit10c_Densenet161())
+    summarize_model(lit10c_Densenet169())
+    summarize_model(lit10c_Densenet201())

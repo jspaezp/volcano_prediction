@@ -89,3 +89,16 @@ def polyfit(x, y, degree):
 def test_polyfit():
     polyfit(np.array([1, 2, 3, 4, 5]), np.array([2, 4, 6, 8, 10]), 1)
     # {'polynomial': [1.9999999999999996, 4.690263559940989e-16], 'determination': 0.9999999999999997}
+
+
+def summarize_model(model):
+    trainnable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total_params = sum(p.numel() for p in model.parameters())
+
+    print(
+        (
+            f"Model of type {type(model)}, "
+            f"Params: {total_params:,}, "
+            f"Trainable: {trainnable_params:,}"
+        )
+    )

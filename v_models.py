@@ -60,19 +60,28 @@ def test_densenet_10r():
 
 class resnet_10c(models.resnet.ResNet):
     def __init__(
-        self, block=models.resnet.BasicBlock, layers=[2, 2, 2, 2], num_classes=4
+        self,
+        block=models.resnet.BasicBlock,
+        layers=[2, 2, 2, 2],
+        num_classes=4,
+        *args,
+        **kwargs
     ):
         self.inplanes = 64
-        super(resnet_10c, self).__init__(block, layers, num_classes=num_classes)
+        super(resnet_10c, self).__init__(
+            block, layers, num_classes=num_classes, *args, **kwargs
+        )
 
         # This makes the input be 10 channels and not 3
         self.conv1 = nn.Conv2d(10, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
 
 class resnet_10r(resnet_10c):
-    def __init__(self, block=models.resnet.BasicBlock, layers=[2, 2, 2, 2]):
+    def __init__(
+        self, block=models.resnet.BasicBlock, layers=[2, 2, 2, 2], *args, **kwargs
+    ):
         self.inplanes = 64
-        super(resnet_10r, self).__init__(block, layers, num_classes=1)
+        super(resnet_10r, self).__init__(block, layers, num_classes=1, *args, **kwargs)
         self.lin = nn.Linear(self.fc.out_features, 1)
         self.rel = nn.LeakyReLU()
 
