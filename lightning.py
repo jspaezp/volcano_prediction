@@ -49,6 +49,21 @@ class LitModel(pl.LightningModule):
         return val_loss
 
 
+class Lit10CResNeSt(LitModel):
+    def __init__(self, name="resnest50", *args, **kwargs):
+        """
+        docstring
+        """
+        w = 32 if name == "resnest50" else 64
+        net = torch.hub.load(
+            "zhanghang1989/ResNeSt", model=name, pretrained=False, num_classes=1
+        )
+        net.conv1[0] = torch.nn.Conv2d(
+            10, w, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False
+        )
+        super(Lit10CResNeSt, self).__init__(net, *args, **kwargs)
+
+
 class Lit10CResnet(LitModel):
     def __init__(
         self,
@@ -64,54 +79,6 @@ class Lit10CResnet(LitModel):
         super(Lit10CResnet, self).__init__(
             resnet, optimizer=optimizer, learning_rate=learning_rate, loss=loss
         )
-
-
-def lit10c_Resnet18(*args, **kwargs):
-    return Lit10CResnet(BasicBlock, [2, 2, 2, 2])
-
-
-def lit10c_Resnet34(*args, **kwargs):
-    return Lit10CResnet(BasicBlock, [3, 4, 6, 3])
-
-
-def lit10c_Resnet50(*args, **kwargs):
-    return Lit10CResnet(Bottleneck, [3, 4, 6, 3])
-
-
-def lit10c_Resnet101(*args, **kwargs):
-    return Lit10CResnet(Bottleneck, [3, 4, 23, 3])
-
-
-def lit10c_Resnet152(*args, **kwargs):
-    return Lit10CResnet(Bottleneck, [3, 8, 36, 3])
-
-
-def lit10c_resnext50_32x4d(*args, **kwargs):
-    return Lit10CResnet(Bottleneck, [3, 4, 6, 3], groups=32, width_per_group=4)
-
-
-def lit10c_Densenet121(*args, **kwargs):
-    return Lit10CDensenet(
-        growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64
-    )
-
-
-def lit10c_Densenet161(*args, **kwargs):
-    return Lit10CDensenet(
-        growth_rate=48, block_config=(6, 12, 36, 24), num_init_features=96
-    )
-
-
-def lit10c_Densenet169(*args, **kwargs):
-    return Lit10CDensenet(
-        growth_rate=32, block_config=(6, 12, 32, 32), num_init_features=64
-    )
-
-
-def lit10c_Densenet201(*args, **kwargs):
-    return Lit10CDensenet(
-        growth_rate=32, block_config=(6, 12, 48, 32), num_init_features=64
-    )
 
 
 class Lit10CDensenet(LitModel):
@@ -219,7 +186,9 @@ class VolcanoDataLoader(pl.LightningDataModule):
         return DataLoader(self.volcano_val, batch_size=self.batch_size)
 
 
-def get_default_trainer(ngpus=0):
+def get_default_trainer(
+    ngpus=0,
+):
     checkpoint_callback = ModelCheckpoint(
         filepath=os.getcwd(),
         save_top_k=4,
@@ -242,6 +211,7 @@ def get_default_trainer(ngpus=0):
         precision=16,
         progress_bar_refresh_rate=25,
         profiler="simple",
+        max_epochs=1000,
     )
 
     return trainer
@@ -262,16 +232,101 @@ def test_train():
     trainer.fit(model, DL)
 
 
+def lit10c_Resnet18(*args, **kwargs):
+    return Lit10CResnet(BasicBlock, [2, 2, 2, 2])
+
+
+def lit10c_Resnet34(*args, **kwargs):
+    return Lit10CResnet(BasicBlock, [3, 4, 6, 3])
+
+
+def lit10c_Resnet50(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 4, 6, 3])
+
+
+def lit10c_Resnet101(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 4, 23, 3])
+
+
+def lit10c_Resnet152(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 8, 36, 3])
+
+
+def lit10c_resnext50_32x4d(*args, **kwargs):
+    return Lit10CResnet(Bottleneck, [3, 4, 6, 3], groups=32, width_per_group=4)
+
+
+def lit10c_Densenet121(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64
+    )
+
+
+def lit10c_Densenet161(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=48, block_config=(6, 12, 36, 24), num_init_features=96
+    )
+
+
+def lit10c_Densenet169(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=32, block_config=(6, 12, 32, 32), num_init_features=64
+    )
+
+
+def lit10c_Densenet201(*args, **kwargs):
+    return Lit10CDensenet(
+        growth_rate=32, block_config=(6, 12, 48, 32), num_init_features=64
+    )
+
+
+def lit10c_ResNeSt50(*args, **kwargs):
+    return Lit10CResNeSt(name="resnest50")
+
+
+def lit10c_ResNeSt101(*args, **kwargs):
+    return Lit10CResNeSt(name="resnest101")
+
+
+def lit10c_ResNeSt200(*args, **kwargs):
+    return Lit10CResNeSt(name="resnest200")
+
+
+def lit10c_ResNeSt269(*args, **kwargs):
+    return Lit10CResNeSt(name="resnest269")
+
+
+implemented_lit_models = {
+    "lit10c_Resnet18": lit10c_Resnet18,
+    "lit10c_Resnet34": lit10c_Resnet34,
+    "lit10c_Resnet50": lit10c_Resnet50,
+    "lit10c_Resnet101": lit10c_Resnet101,
+    "lit10c_Resnet152": lit10c_Resnet152,
+    # "lit10c_resnext50_32x4d": lit10c_resnext50_32x4d,
+    "lit10c_Densenet121": lit10c_Densenet121,
+    "lit10c_Densenet161": lit10c_Densenet161,
+    "lit10c_Densenet169": lit10c_Densenet169,
+    "lit10c_Densenet201": lit10c_Densenet201,
+    "lit10c_ResNeSt50": lit10c_ResNeSt50,
+    "lit10c_ResNeSt101": lit10c_ResNeSt101,
+    "lit10c_ResNeSt200": lit10c_ResNeSt200,
+    "lit10c_ResNeSt269": lit10c_ResNeSt269,
+}
+
+
+def test_models():
+    x_image = torch.randn(2, 10, 224, 224)
+
+    for k, v in implemented_lit_models.items():
+        print(k)
+        mod = v()
+        summarize_model(mod)
+        out = mod(x_image)
+        print(out.shape)
+        assert out.shape == torch.Size([2, 1])
+
+
 if __name__ == "__main__":
+    test_models()
     test_train()
     test_TensorDataLoader()
-    summarize_model(lit10c_Resnet18())
-    summarize_model(lit10c_Resnet34())
-    summarize_model(lit10c_Resnet50())
-    summarize_model(lit10c_Resnet101())
-    summarize_model(lit10c_Resnet152())
-    summarize_model(lit10c_resnext50_32x4d())
-    summarize_model(lit10c_Densenet121())
-    summarize_model(lit10c_Densenet161())
-    summarize_model(lit10c_Densenet169())
-    summarize_model(lit10c_Densenet201())

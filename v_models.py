@@ -1,7 +1,5 @@
-from numpy.lib.twodim_base import mask_indices
 import torch
 import torch.nn as nn
-import torch.nn.functional as nnf
 import torchvision.models as models
 
 
