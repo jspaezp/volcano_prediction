@@ -83,9 +83,7 @@ class TensorDataLoader(pl.LightningDataModule):
         db_size = len(data_full)
         train_size = int(db_size * self.train_split)
         val_size = db_size - train_size
-        train, self.val = random_split(
-            data_full, [train_size, val_size]
-        )
+        train, self.val = random_split(data_full, [train_size, val_size])
         self.train = AugmentedDataset(train, self.augmenter)
 
     def train_dataloader(self):
@@ -97,30 +95,30 @@ class TensorDataLoader(pl.LightningDataModule):
 
 def test_TensorDataLoader():
     # Test that it works
-    x_tensor = torch.stack([x * torch.ones((3,3)) for x in range(50)])
+    x_tensor = torch.stack([x * torch.ones((3, 3)) for x in range(50)])
     y_tensor = torch.stack([x * torch.ones((1)) for x in range(50)])
 
     def samp_augmenter(image):
-        return image*torch.rand(1)
+        return image * torch.rand(1)
 
-    tdl = TensorDataLoader(x_tensor=x_tensor, y_tensor=y_tensor, augmenter=samp_augmenter, batch_size=2, train_split=0.5)
+    tdl = TensorDataLoader(
+        x_tensor=x_tensor,
+        y_tensor=y_tensor,
+        augmenter=samp_augmenter,
+        batch_size=2,
+        train_split=0.5,
+    )
     tdl.setup()
 
     tr_dl = tdl.train_dataloader()
     val_dl = tdl.val_dataloader()
 
-    x, x2, y, y2 = (1,2,3,4)
+    x, x2, y, y2 = (1, 2, 3, 4)
 
-    for x in tr_dl:
+    for x, y in zip(tr_dl, val_dl):
         continue
 
-    for x2 in tr_dl:
-        continue
-
-    for y in val_dl:
-        continue
-
-    for y2 in val_dl:
+    for x2, y2 in zip(tr_dl, val_dl):
         continue
 
     # Test that it actually augments where it is supposed to
@@ -131,6 +129,7 @@ def test_TensorDataLoader():
     # TODO write test to check that shuffling happends when it is supposed to
     # print(x2[1])
     # print(x[1])
+
 
 # TODO decouple the reading with the dataset,
 class VolcanoDataLoader(pl.LightningDataModule):
@@ -151,7 +150,7 @@ class VolcanoDataLoader(pl.LightningDataModule):
             volcano_data_full, [train_size, val_size]
         )
 
-        self.volcano_train = AugmentedDataset(volcano_train, self.augmenter) 
+        self.volcano_train = AugmentedDataset(volcano_train, self.augmenter)
 
     def train_dataloader(self):
         return DataLoader(self.volcano_train, batch_size=self.batch_size, shuffle=True)
@@ -192,7 +191,7 @@ def test_train():
     import pandas as pd
 
     tiny_df = pd.DataFrame(
-        {"segment_id": [1000015382] * 10, "time_to_eruption": [1] * 10}
+        {"segment_id": [1000015382] * 4, "time_to_eruption": [1] * 4}
     )
     DL = VolcanoDataLoader(
         train_df=tiny_df, data_dir="sample_data", batch_size=2, train_split=0.5

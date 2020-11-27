@@ -15,7 +15,9 @@ class AugmentedDataset(Dataset):
 
     def __getitem__(self, index):
         x, y = self.dataset.__getitem__(index)
-        return self.augmenter(x), y
+        if self.augmenter is not None:
+            x = self.augmenter(x.detach().clone())
+        return x, y
 
     def __len__(self):
         return len(self.dataset)
