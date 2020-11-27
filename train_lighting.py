@@ -1,11 +1,11 @@
 from augmentation import get_default_augmenter
-from lightning import Lit10cResnet50, get_default_trainer, VolcanoDataLoader
+from lightning import get_default_trainer, VolcanoDataLoader, lit10c_Resnet18
 
 
 def train():
     scripted_transforms = get_default_augmenter()
     trainer = get_default_trainer()
-    model = Lit10cResnet50()
+    model = lit10c_Resnet18()
 
     train_df = ""
     data_dir = ""
