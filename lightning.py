@@ -62,6 +62,12 @@ class Lit10CResNeSt(LitModel):
             10, w, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False
         )
         super(Lit10CResNeSt, self).__init__(net, *args, **kwargs)
+        self.rel = torch.nn.LeakyReLU()
+
+    def forward(self, x):
+        x = super(Lit10CResNeSt, self).forward(x)
+        x = self.rel(x)
+        return x
 
 
 class Lit10CResnet(LitModel):
@@ -302,7 +308,7 @@ implemented_lit_models = {
     "lit10c_Resnet50": lit10c_Resnet50,
     "lit10c_Resnet101": lit10c_Resnet101,
     "lit10c_Resnet152": lit10c_Resnet152,
-    # "lit10c_resnext50_32x4d": lit10c_resnext50_32x4d,
+    "lit10c_resnext50_32x4d": lit10c_resnext50_32x4d,
     "lit10c_Densenet121": lit10c_Densenet121,
     "lit10c_Densenet161": lit10c_Densenet161,
     "lit10c_Densenet169": lit10c_Densenet169,
