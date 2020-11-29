@@ -22,7 +22,7 @@ class LitModel(pl.LightningModule):
         self.lr = learning_rate
         self.loss = loss()
         self.net = net
-        self.save_hyperparameters("net", "optimizer", "learning_rate", "loss")
+        self.save_hyperparameters("optimizer", "learning_rate", "loss")
 
     def forward(self, x):
         x = self.net.forward(x)
@@ -345,7 +345,7 @@ implemented_resnests = {
     "lit10c_ResNeSt269": lit10c_ResNeSt269,
 }
 
-implemented_lit_models.update(implemented_resnests)
+implemented_lit_models.update(implemented_resnets)
 implemented_lit_models.update(implemented_densenets)
 implemented_lit_models.update(implemented_resnests)
 
