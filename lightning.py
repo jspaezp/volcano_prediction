@@ -187,6 +187,7 @@ class VolcanoDataLoader(pl.LightningDataModule):
         self.volcano_train = AugmentedDataset(volcano_train, self.augmenter)
 
     def train_dataloader(self):
+        # TODO make a setter for self.augmenter so it gets added to the generated dataloader
         return DataLoader(self.volcano_train, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
