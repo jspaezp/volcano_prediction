@@ -22,6 +22,7 @@ class LitModel(pl.LightningModule):
         self.lr = learning_rate
         self.loss = loss()
         self.net = net
+        self.save_hyperparameters("net", "optimizer", "learning_rate", "loss")
 
     def forward(self, x):
         x = self.net.forward(x)
