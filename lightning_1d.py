@@ -102,14 +102,14 @@ class ConvNet1D(pl.LightningModule):
         self.conv1 = torch.nn.Conv1d(10, 32, 9, stride=5)
         self.pool = torch.nn.MaxPool1d(2, 2)
         self.conv2 = torch.nn.Conv1d(32, 64, 9, stride=5)
-        self.fc1 = torch.nn.Linear(64 * 5999, 120)
+        self.fc1 = torch.nn.Linear(64 * 599, 120)
         self.fc2 = torch.nn.Linear(120, 84)
         self.fc3 = torch.nn.Linear(84, 1)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 64 * 5999)
+        x = x.view(-1, 64*599)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -124,37 +124,44 @@ class LitConvNet1D(LitModel):
 
 
 if __name__ == "__main__":
-    from pytorch_lightning.callbacks import (
-        EarlyStopping,
-        TensorBoardLogger,
-        WandbLogger,
-    )
+    from pytorch_lightning.callbacks import EarlyStopping
+    from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 
-    lr = 1e-4
+    lr = 1e-2
     opt = torch.optim.Adam
     model_name = "LitConvNet1D"
 
     full_df = pd.read_csv("./sample_data/train.csv")
-    data_dir = "./train/"
+    data_dir = "../train/"
 
-    data = Volcano1DDataModule(full_df, data_dir, augmenter=None, batch_size=64)
+    data = Volcano1DDataModule(full_df, data_dir, augmenter=None, batch_size=64, maxmem=1e8)
 
     optim_name = opt.__name__
     run_name = f"{model_name}_{optim_name}_{lr}"
     print(f">>>>>>>>>>>>>> {run_name}")
-    stopper = EarlyStopping(monitor="val_loss", verbose=True, patience=20, mode="min")
-    logger = TensorBoardLogger("tb_logs", name=run_name)
+    if not "Stopping Enabled":
+        stopper = EarlyStopping(monitor="val_loss", verbose=True, patience=20, mode="min")
+        callbacks = [stopper]
+    else:
+        callbacks = []
 
-    wandb_logger = WandbLogger(name=run_name, project="volcanos")
+
+    if not "Logging Enabled":
+        logger = TensorBoardLogger("tb_logs", name=run_name)
+        wandb_logger = WandbLogger(name=run_name, project="volcanos")
+
+        loggers = [logger, wandb_logger]
+    else:
+        loggers = []
 
     trainer = pl.Trainer(
-        logger=[logger, wandb_logger],
-        callbacks=[stopper],
+        logger=loggers,
+        callbacks=callbacks,
         auto_lr_find=False,
-        gpus=1,
-        precision=16,
+        gpus=0,
+        # precision=16,
         progress_bar_refresh_rate=10,
-        max_epochs=50,
+        max_epochs=1000,
         profiler="simple",
     )
 
