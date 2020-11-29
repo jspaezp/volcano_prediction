@@ -99,17 +99,20 @@ class Greedy1DTensorLoader(TensorDispatcher):
 class ConvNet1D(pl.LightningModule):
     def __init__(self):
         super(ConvNet1D, self).__init__()
+        self.pool = torch.nn.MaxPool1d(4, 4)
         self.conv1 = torch.nn.Conv1d(10, 32, 9, stride=5)
-        self.pool = torch.nn.MaxPool1d(2, 2)
         self.conv2 = torch.nn.Conv1d(32, 64, 9, stride=5)
-        self.fc1 = torch.nn.Linear(64 * 599, 120)
-        self.fc2 = torch.nn.Linear(120, 84)
-        self.fc3 = torch.nn.Linear(84, 1)
+        self.conv3 = torch.nn.Conv1d(64, 124, 9, stride=5)
+        self.fc1 = torch.nn.Linear(124 * 74, 512)
+        self.fc2 = torch.nn.Linear(512, 124)
+        self.fc3 = torch.nn.Linear(124, 1)
 
     def forward(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 64*599)
+        x = self.pool(F.relu(self.conv3(x)))
+        print(x.shape)
+        x = x.view(-1, 124*74)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -126,10 +129,16 @@ class LitConvNet1D(LitModel):
 if __name__ == "__main__":
     from pytorch_lightning.callbacks import EarlyStopping
     from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
+    from utilities import summarize_model
 
     lr = 1e-2
     opt = torch.optim.Adam
     model_name = "LitConvNet1D"
+    model = LitConvNet1D(learning_rate=lr, optimizer=opt)
+    summarize_model(model)
+    print(model.net)
+
+    print(model(torch.rand(2,10,600000)))
 
     full_df = pd.read_csv("./sample_data/train.csv")
     data_dir = "../train/"
@@ -165,6 +174,5 @@ if __name__ == "__main__":
         profiler="simple",
     )
 
-    model = LitConvNet1D(learning_rate=lr, optimizer=opt)
     # trainer.tune(model, data)
     trainer.fit(model, data)
