@@ -112,12 +112,131 @@ class ConvNet1D(pl.LightningModule):
         x = self.pool(F.relu(self.conv2(x)))
         x = self.pool(F.relu(self.conv3(x)))
         print(x.shape)
-        x = x.view(-1, 124*74)
+        x = x.view(-1, 124 * 74)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         x = F.leaky_relu(x)
         return x
+
+
+def conv9x1(
+    in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1
+) -> torch.nn.Conv1d:
+    """9x1 convolution with padding"""
+    return torch.nn.Conv1d(
+        in_planes,
+        out_planes,
+        kernel_size=9,
+        stride=stride,
+        padding=dilation + 3, # TODO find a better way to define this ...
+        groups=groups,
+        bias=False,
+        dilation=dilation,
+    )
+
+
+def conv1x1(in_planes: int, out_planes: int, stride: int = 1) -> torch.nn.Conv1d:
+    """1x1 convolution"""
+    return torch.nn.Conv1d(
+        in_planes, out_planes, kernel_size=1, stride=stride, bias=False
+    )
+
+
+class BasicBlock1D(torch.nn.Module):
+    def __init__(self, inplanes, planes, stride, downsample = None):
+        super().__init__()
+        self.conv1 = conv9x1(inplanes, planes, stride)
+        self.bn1 = torch.nn.BatchNorm1d(planes)
+        self.relu = torch.nn.ReLU(inplace=True)
+        self.conv2 = conv9x1(planes, planes)
+        self.bn2 = torch.nn.BatchNorm1d(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        identity = x
+        print(x.shape)
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        print(out.shape)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        print(identity.shape)
+        out += identity
+        out = self.relu(out)
+        return out
+
+
+class ResNet1D(pl.LightningModule):
+    def __init__(self, out_features = 1):
+        super().__init__()
+        self.conv1 = torch.nn.Conv1d(10, 64, 49, 4, 3)
+        self.bn1 = torch.nn.BatchNorm1d(64)
+        self.maxpool = torch.nn.MaxPool1d(9, 4)
+        self.layer1 = torch.nn.Sequential(
+            BasicBlock1D(64, 64, 1),
+            BasicBlock1D(64, 64, 1)
+        )
+        self.layer2 = torch.nn.Sequential(
+            BasicBlock1D(
+                64, 128, 2, 
+                downsample=torch.nn.Sequential(
+                    conv1x1(64, 128, stride = 2),
+                    torch.nn.BatchNorm1d(128),
+            )),
+            BasicBlock1D(128, 128, 1)
+        )
+        self.layer3 = torch.nn.Sequential(
+            BasicBlock1D(
+                128, 256, 2, 
+                downsample=torch.nn.Sequential(
+                    conv1x1(128, 256, stride = 2),
+                    torch.nn.BatchNorm1d(256),
+            )),
+            BasicBlock1D(256, 256, 1)
+        )
+        self.layer4 = torch.nn.Sequential(
+            BasicBlock1D(
+                256, 512, 2, 
+                downsample=torch.nn.Sequential(
+                    conv1x1(256, 512, stride = 2),
+                    torch.nn.BatchNorm1d(512),
+            )),
+            BasicBlock1D(512, 512, 1)
+        )
+        self.avgpool = torch.nn.AdaptiveAvgPool1d(1)
+        self.fc = torch.nn.Linear(512, out_features)
+
+    
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(self.bn1(x))
+        x = self.maxpool(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.avgpool(x)
+        x = x.view(-1, 512)
+        x = self.fc(x)
+        return x
+
+
+def test_resnet1d():
+    in_ten = csv_to_tensor("./sample_data/1007233480.csv")
+    in_ten = in_ten.unsqueeze(0)
+    net = ResNet1D()
+
+    out = net(in_ten)
+    print(out)
 
 
 class LitConvNet1D(LitModel):
@@ -138,22 +257,25 @@ if __name__ == "__main__":
     summarize_model(model)
     print(model.net)
 
-    print(model(torch.rand(2,10,600000)))
+    print(model(torch.rand(2, 10, 600000)))
 
     full_df = pd.read_csv("./sample_data/train.csv")
     data_dir = "../train/"
 
-    data = Volcano1DDataModule(full_df, data_dir, augmenter=None, batch_size=64, maxmem=1e8)
+    data = Volcano1DDataModule(
+        full_df, data_dir, augmenter=None, batch_size=64, maxmem=5e7
+    )
 
     optim_name = opt.__name__
     run_name = f"{model_name}_{optim_name}_{lr}"
     print(f">>>>>>>>>>>>>> {run_name}")
     if not "Stopping Enabled":
-        stopper = EarlyStopping(monitor="val_loss", verbose=True, patience=20, mode="min")
+        stopper = EarlyStopping(
+            monitor="val_loss", verbose=True, patience=20, mode="min"
+        )
         callbacks = [stopper]
     else:
         callbacks = []
-
 
     if not "Logging Enabled":
         logger = TensorBoardLogger("tb_logs", name=run_name)
